@@ -4,8 +4,9 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.proyecto_movil.data.AlbumInfo
-import com.example.proyecto_movil.data.repository.AlbumRepository
 import com.example.proyecto_movil.data.repository.ReviewRepository
+import com.example.proyecto_movil.data.repository.AlbumRepository
+import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,7 +17,8 @@ import kotlinx.coroutines.launch
 @HiltViewModel
 class AddReviewViewModel @Inject constructor(
     private val reviewRepository: ReviewRepository,
-    private val albumRepository: AlbumRepository
+    private val albumRepository: AlbumRepository,
+    private val auth: FirebaseAuth
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AddReviewState())
@@ -39,8 +41,19 @@ class AddReviewViewModel @Inject constructor(
 
     /* ---------- Publicar Reseña ---------- */
 
-    fun onPublishClicked(userId: Int = 1) {
+    fun onPublishClicked() {
         val s = _uiState.value
+
+        val currentUserId = auth.currentUser?.uid
+        if (currentUserId.isNullOrBlank()) {
+            _uiState.update {
+                it.copy(
+                    showMessage = true,
+                    errorMessage = "Debes iniciar sesión para publicar reseñas"
+                )
+            }
+            return
+        }
 
         // 🧩 Validaciones
         when {
@@ -74,8 +87,8 @@ class AddReviewViewModel @Inject constructor(
                 val result = reviewRepository.createReview(
                     content = s.reviewText,
                     score = s.scorePercent,
-                    albumId = s.albumId!!,
-                    userId = userId
+                    albumId = s.albumId!!.toString(),
+                    userId = currentUserId
                 )
 
                 if (result.isSuccess) {

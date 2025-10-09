@@ -117,6 +117,11 @@ fun UserProfileScreen(
                     ) {
                         // ---------- Header: usa datos de 'user' (NO del state) ----------
                         val avatar: String = user.avatarUrl.ifEmpty { "https://placehold.co/120x120" }
+                        val displayName = remember(user) {
+                            user.username.ifBlank {
+                                user.id.takeIf { it.isNotBlank() } ?: "Usuario"
+                            }
+                        }
                         AsyncImage(
                             model = avatar,
                             contentDescription = user.username,
@@ -127,10 +132,10 @@ fun UserProfileScreen(
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
-                            text = user.username, // String explícito -> sin ambigüedad
+                            text = displayName, // String explícito -> sin ambigüedad
                             fontWeight = FontWeight.Bold,
                             fontSize = 22.sp,
-                            color = MaterialTheme.colorScheme.onBackground
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
                             text = "${user.followers} seguidores • ${user.following} siguiendo",
