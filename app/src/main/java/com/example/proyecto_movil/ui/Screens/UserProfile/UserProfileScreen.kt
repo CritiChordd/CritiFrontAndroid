@@ -41,9 +41,6 @@ fun UserProfileScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
 
-    // El VM pide solo userId:String
-    LaunchedEffect(user.id) { viewModel.setInitialData(user.id) }
-
     LaunchedEffect(
         state.navigateBack,
         state.navigateToSettings,

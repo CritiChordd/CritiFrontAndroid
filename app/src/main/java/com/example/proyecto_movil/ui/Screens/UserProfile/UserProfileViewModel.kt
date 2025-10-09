@@ -20,7 +20,13 @@ class UserProfileViewModel @Inject constructor(
     val uiState: StateFlow<UserProfileState> = _uiState
 
     // Lo llama tu Screen
+    private var lastRequestedUserId: String? = null
+
     fun setInitialData(userId: String) {
+        val alreadyLoaded = lastRequestedUserId == userId && uiState.value.user != null
+        if (alreadyLoaded) return
+
+        lastRequestedUserId = userId
         loadUser(userId)
     }
 
