@@ -11,6 +11,6 @@ data class CreateReviewDto(
     val content: String,
     val score: Int,
     val is_low_score: Boolean,
-    val album_id: String,
-    val user_id: String,
+    val album_id: Int,
+    val user_id: Int,
 )

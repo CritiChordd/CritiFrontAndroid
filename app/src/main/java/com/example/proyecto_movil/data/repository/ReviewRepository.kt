@@ -27,8 +27,8 @@ class ReviewRepository @Inject constructor(
     suspend fun createReview(
         content: String,
         score: Int,
-        albumId: String,
-        userId: String
+        albumId: Int,
+        userId: Int
     ): Result<Unit> {
         return try {
             val boundedScore = score.coerceIn(0, 10)
