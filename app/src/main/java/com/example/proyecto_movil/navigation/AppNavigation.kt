@@ -2,6 +2,7 @@ package com.example.proyecto_movil.navigation
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -134,21 +135,23 @@ fun AppNavHost(
             LaunchedEffect(uid) { if (uid.isNotBlank()) vm.setInitialData(uid) }
             val state = vm.uiState.collectAsState().value
 
-            if (state.user != null) {
-                UserProfileScreen(
-                    viewModel = vm,
-                    user = state.user,
-                    reviews = state.reviews,
-                    onBackClick = { navController.navigateUp() },
-                    onAlbumClick = { album ->
-                        navController.navigate(Screen.Album.createRoute(album.id))
-                    },
-                    onReviewClick = { /* TODO */ },
-                    onSettingsClick = { navController.navigate(Screen.Settings.route) },
-                    onEditProfile = { navController.navigate(Screen.EditProfile.route) }
-                )
-            } else {
-                SimpleError("Usuario no encontrado")
+            when {
+                state.isLoading -> SimpleLoading()
+                state.user != null -> {
+                    UserProfileScreen(
+                        viewModel = vm,
+                        user = state.user,
+                        reviews = state.reviews,
+                        onBackClick = { navController.navigateUp() },
+                        onAlbumClick = { album ->
+                            navController.navigate(Screen.Album.createRoute(album.id))
+                        },
+                        onReviewClick = { /* TODO */ },
+                        onSettingsClick = { navController.navigate(Screen.Settings.route) },
+                        onEditProfile = { navController.navigate(Screen.EditProfile.route) }
+                    )
+                }
+                else -> SimpleError(state.errorMessage ?: "Usuario no encontrado")
             }
         }
 
@@ -257,6 +260,13 @@ fun AppNavHost(
 private fun SimpleError(message: String) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Text(text = message, color = MaterialTheme.colorScheme.onBackground)
+    }
+}
+
+@Composable
+private fun SimpleLoading() {
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        CircularProgressIndicator()
     }
 }
 
