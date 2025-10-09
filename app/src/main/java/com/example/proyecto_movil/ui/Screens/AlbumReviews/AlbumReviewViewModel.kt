@@ -89,6 +89,6 @@ class AlbumReviewViewModel @Inject constructor(
     fun onArtistClicked() { _uiState.update { it.copy(navigateToArtist = true) } }
     fun consumeNavigateArtist() { _uiState.update { it.copy(navigateToArtist = false) } }
 
-    fun onUserClicked(userId: Int) { _uiState.update { it.copy(openUserId = userId) } }
+    fun onUserClicked(userId: String) { _uiState.update { it.copy(openUserId = userId) } }
     fun consumeOpenUser() { _uiState.update { it.copy(openUserId = null) } }
 }

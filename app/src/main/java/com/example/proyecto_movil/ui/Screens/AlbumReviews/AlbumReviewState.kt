@@ -14,7 +14,7 @@ data class AlbumReviewState(
 
     // Navegación existente
     val navigateToArtist: Boolean = false,
-    val openUserId: Int? = null,
+    val openUserId: String? = null,
 
     // Snackbar (mensajes transientes desde try/catch)
     val showMessage: Boolean = false,

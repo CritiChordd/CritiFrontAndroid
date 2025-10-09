@@ -1,10 +1,12 @@
 package com.example.proyecto_movil.ui.Screens.AddReview
 
+import com.example.proyecto_movil.data.AlbumInfo
+
 data class AddReviewState(
-    val albumId: Int = 0, // 👈 Nuevo
+    val albumId: Int? = null,
     val albumCoverRes: String = "",
     val albumTitle: String = "",
-    val albumArtist: String = " Miller",
+    val albumArtist: String = "",
     val albumYear: String = "",
     val dateString: String = "",
     val scorePercent: Int = 0,
@@ -12,6 +14,7 @@ data class AddReviewState(
     val reviewText: String = "",
     val showMessage: Boolean = false,
     val errorMessage: String = "",
+    val availableAlbums: List<AlbumInfo> = emptyList(),
     val navigateCancel: Boolean = false,
     val navigatePublished: Boolean = false,
     val navigateToSettings: Boolean = false
