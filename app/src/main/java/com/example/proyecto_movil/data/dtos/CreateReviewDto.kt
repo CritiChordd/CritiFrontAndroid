@@ -15,5 +15,6 @@ data class CreateReviewDto(
     val user_id: String = "",
     val firebase_user_id: String = "",
     val createdAt: String = "",
-    val updatedAt: String = ""
+    val updatedAt: String = "",
+    val is_favorite: Boolean = false
 )

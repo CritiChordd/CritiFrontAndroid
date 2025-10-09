@@ -11,5 +11,6 @@ data class ReviewInfo(
     val firebaseUserId: String? = null,
     val createdAt: String = "",
     val updatedAt: String = "",
-    val liked: Boolean = false
+    val liked: Boolean = false,
+    val isFavorite: Boolean = false
 )

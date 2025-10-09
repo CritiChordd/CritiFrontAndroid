@@ -11,7 +11,8 @@ data class ReviewDto(
     val user_id: String = "",
     val firebase_user_id: String? = null,
     val createdAt: String = "",
-    val updatedAt: String = ""
+    val updatedAt: String = "",
+    val is_favorite: Boolean = false
 )
 
 
@@ -26,6 +27,7 @@ fun ReviewDto.toReviewInfo(): ReviewInfo {
         firebaseUserId = firebase_user_id,
         createdAt = createdAt,
         updatedAt = updatedAt,
-        liked = false
+        liked = false,
+        isFavorite = is_favorite
     )
 }

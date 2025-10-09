@@ -11,6 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -152,8 +153,9 @@ fun UserProfileScreen(
                         Spacer(modifier = Modifier.height(24.dp))
 
                         if (state.favoriteAlbums.isNotEmpty()) {
+                            val favoritesTitle = "Tus álbumes favoritos (${state.favoriteAlbums.size}/5)"
                             Text(
-                                "Tus álbumes favoritos",
+                                favoritesTitle,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 18.sp,
                                 color = MaterialTheme.colorScheme.onSurface
@@ -290,6 +292,14 @@ private fun ReviewItem(item: UserReviewUi, onClick: () -> Unit) {
             }
         }
         Spacer(Modifier.width(8.dp))
+        if (review.isFavorite) {
+            Icon(
+                imageVector = Icons.Filled.Star,
+                contentDescription = "Reseña favorita",
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(end = 8.dp)
+            )
+        }
         val scoreColor =
             if (review.score >= 7) Color(0xFF2E7D32)
             else if (review.score >= 5) Color(0xFFF9A825)
@@ -357,7 +367,8 @@ private fun UserProfileScreenPreview() {
             albumId = sampleAlbums[0].id,
             userId = sampleUser.id,
             createdAt = "2024-01-01",
-            updatedAt = "2024-01-01"
+            updatedAt = "2024-01-01",
+            isFavorite = true
         ),
         ReviewInfo(
             id = "review2",
@@ -367,7 +378,8 @@ private fun UserProfileScreenPreview() {
             albumId = sampleAlbums[1].id,
             userId = sampleUser.id,
             createdAt = "2024-02-14",
-            updatedAt = "2024-02-14"
+            updatedAt = "2024-02-14",
+            isFavorite = false
         )
     )
     val sampleReviewItems = sampleReviews.mapIndexed { index, review ->

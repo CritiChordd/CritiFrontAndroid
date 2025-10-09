@@ -4,14 +4,20 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.shape.CircleShape
 import com.example.proyecto_movil.R
 import com.example.proyecto_movil.data.AlbumInfo
 import com.example.proyecto_movil.ui.utils.ScreenBackground
+import kotlin.math.min
 import kotlin.math.roundToInt
 
 @Composable
@@ -65,13 +71,39 @@ fun AddReviewScreen(
                 )
             }
 
-            // Checkbox para like
+            // Estrella para favoritos
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Checkbox(
-                    checked = state.liked,
-                    onCheckedChange = { viewModel.toggleLike() }
-                )
-                Text(if (state.liked) "¡Me gustó!" else "No me gustó")
+                val tint = if (state.isFavorite) Color.White else MaterialTheme.colorScheme.secondary
+                val containerColor = if (state.isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
+                Surface(
+                    shape = CircleShape,
+                    color = containerColor,
+                    tonalElevation = if (state.isFavorite) 4.dp else 0.dp
+                ) {
+                    IconToggleButton(
+                        checked = state.isFavorite,
+                        onCheckedChange = { viewModel.toggleFavorite() }
+                    ) {
+                        val icon = if (state.isFavorite) Icons.Filled.Star else Icons.Outlined.StarOutline
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = if (state.isFavorite) "Quitar de favoritos" else "Marcar como favorito",
+                            tint = tint
+                        )
+                    }
+                }
+                Spacer(Modifier.width(12.dp))
+                val nextCount = if (state.isFavorite) {
+                    min(state.currentFavoriteCount + 1, state.favoriteLimit)
+                } else {
+                    state.currentFavoriteCount
+                }
+                val favoriteLabel = if (state.isFavorite) {
+                    "Marcado como favorito (${nextCount}/${state.favoriteLimit})"
+                } else {
+                    "Agregar a favoritos (${nextCount}/${state.favoriteLimit})"
+                }
+                Text(favoriteLabel)
             }
 
             // Mensaje de error si no hay texto
@@ -114,7 +146,7 @@ fun AddReviewScreen(
         if (state.navigatePublished) {
             val selectedAlbum = albums.firstOrNull { it.id == state.albumId }
             if (selectedAlbum != null) {
-                onPublished(selectedAlbum, state.reviewText, state.scorePercent, state.liked)
+                onPublished(selectedAlbum, state.reviewText, state.scorePercent, state.isFavorite)
             }
             viewModel.consumePublished()
         }

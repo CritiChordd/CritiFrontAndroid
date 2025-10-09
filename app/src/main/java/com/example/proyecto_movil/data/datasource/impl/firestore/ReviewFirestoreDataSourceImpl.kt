@@ -70,7 +70,8 @@ class ReviewFirestoreDataSourceImpl @Inject constructor(
             "user_id" to review.user_id,
             "firebase_user_id" to review.firebase_user_id,
             "createdAt" to createdAt,
-            "updatedAt" to updatedAt
+            "updatedAt" to updatedAt,
+            "is_favorite" to review.is_favorite
         )
 
         docRef.set(payload).await()
@@ -96,7 +97,8 @@ class ReviewFirestoreDataSourceImpl @Inject constructor(
             "user_id" to review.user_id,
             "firebase_user_id" to review.firebase_user_id,
             "createdAt" to review.createdAt.ifBlank { now },
-            "updatedAt" to review.updatedAt.ifBlank { now }
+            "updatedAt" to review.updatedAt.ifBlank { now },
+            "is_favorite" to review.is_favorite
         )
         db.collection("reviews").document(id).set(payload).await()
     }
@@ -151,6 +153,12 @@ class ReviewFirestoreDataSourceImpl @Inject constructor(
             ?: data["createdAt"]?.toString().orEmpty()
         val resolvedUpdatedAt = base.updatedAt.takeIf { it.isNotBlank() }
             ?: data["updatedAt"]?.toString().orEmpty()
+        val resolvedFavorite = when (val rawFavorite = data["is_favorite"]) {
+            is Boolean -> rawFavorite
+            is Number -> rawFavorite.toInt() != 0
+            is String -> rawFavorite.equals("true", ignoreCase = true) || rawFavorite == "1"
+            else -> base.is_favorite
+        }
 
         return base.copy(
             id = id,
@@ -158,7 +166,8 @@ class ReviewFirestoreDataSourceImpl @Inject constructor(
             user_id = resolvedUserId,
             firebase_user_id = resolvedFirebaseId,
             createdAt = resolvedCreatedAt,
-            updatedAt = resolvedUpdatedAt
+            updatedAt = resolvedUpdatedAt,
+            is_favorite = resolvedFavorite
         )
     }
 }

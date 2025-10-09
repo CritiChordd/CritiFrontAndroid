@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.proyecto_movil.data.AlbumInfo
+import com.example.proyecto_movil.data.ReviewInfo
 import com.example.proyecto_movil.data.repository.AlbumRepository
 import com.example.proyecto_movil.data.repository.ReviewRepository
 import com.example.proyecto_movil.data.repository.UserRepository
@@ -91,6 +92,16 @@ class AddReviewViewModel @Inject constructor(
             }
         }
 
+        if (s.isFavorite && s.currentFavoriteCount >= s.favoriteLimit) {
+            _uiState.update {
+                it.copy(
+                    showMessage = true,
+                    errorMessage = "Solo puedes marcar ${s.favoriteLimit} álbumes como favoritos"
+                )
+            }
+            return
+        }
+
         // 🌀 Reset de errores previos
         _uiState.update { it.copy(showMessage = false, errorMessage = "") }
 
@@ -103,12 +114,21 @@ class AddReviewViewModel @Inject constructor(
                     score = normalizedScore,
                     albumId = s.albumId!!,
                     userId = backendUserId,
-                    firebaseUserId = currentUserId
+                    firebaseUserId = currentUserId,
+                    isFavorite = s.isFavorite
                 )
 
                 if (result.isSuccess) {
                     Log.d("AddReviewVM", "✅ Reseña publicada con éxito")
-                    _uiState.update { it.copy(navigatePublished = true) }
+                    _uiState.update {
+                        val updatedCount = if (s.isFavorite) s.currentFavoriteCount + 1 else s.currentFavoriteCount
+                        it.copy(
+                            navigatePublished = true,
+                            currentFavoriteCount = updatedCount,
+                            isFavorite = false
+                        )
+                    }
+                    refreshFavoriteCount(currentUserId, backendUserId)
                 } else {
                     Log.e("AddReviewVM", "❌ Error publicando reseña", result.exceptionOrNull())
                     _uiState.update {
@@ -146,8 +166,26 @@ class AddReviewViewModel @Inject constructor(
     fun updateReviewText(v: String) =
         _uiState.update { it.copy(reviewText = v) }
 
-    fun toggleLike() =
-        _uiState.update { it.copy(liked = !it.liked) }
+    fun toggleFavorite() {
+        val state = _uiState.value
+        if (!state.isFavorite && state.currentFavoriteCount >= state.favoriteLimit) {
+            _uiState.update {
+                it.copy(
+                    showMessage = true,
+                    errorMessage = "Solo puedes marcar ${state.favoriteLimit} favoritos"
+                )
+            }
+            return
+        }
+
+        _uiState.update {
+            it.copy(
+                isFavorite = !state.isFavorite,
+                showMessage = if (state.isFavorite) it.showMessage else false,
+                errorMessage = if (state.isFavorite) it.errorMessage else ""
+            )
+        }
+    }
 
     fun updateScore(score: Int) =
         _uiState.update { it.copy(scorePercent = score) }
@@ -232,7 +270,10 @@ class AddReviewViewModel @Inject constructor(
             val result = userRepository.getUserById(uid)
             result.onSuccess { user ->
                 _uiState.update { state ->
-                    state.copy(backendUserId = user.backendUserId)
+                    state.copy(
+                        backendUserId = user.backendUserId,
+                        firebaseUserId = uid
+                    )
                 }
                 if (user.backendUserId.isNullOrBlank()) {
                     Log.w(
@@ -240,11 +281,41 @@ class AddReviewViewModel @Inject constructor(
                         "Usuario ${user.id} no tiene backendUserId; se requerirá para publicar reseñas"
                     )
                 }
+                refreshFavoriteCount(uid, user.backendUserId)
             }.onFailure {
                 Log.e("AddReviewVM", "Error obteniendo el usuario para reseñas", it)
                 _uiState.update { state ->
-                    state.copy(backendUserId = null)
+                    state.copy(
+                        backendUserId = null,
+                        firebaseUserId = uid
+                    )
                 }
+                refreshFavoriteCount(uid, null)
+            }
+        }
+    }
+
+    private fun refreshFavoriteCount(firebaseUserId: String, backendUserId: String?) {
+        viewModelScope.launch {
+            val primaryResult = reviewRepository.getReviewsByUserId(firebaseUserId)
+            val firebaseReviews = primaryResult.getOrElse { error ->
+                Log.w("AddReviewVM", "No se pudieron obtener las reseñas del usuario: ${error.message}")
+                emptyList()
+            }
+
+            val backendReviews = if (!backendUserId.isNullOrBlank() && backendUserId != firebaseUserId) {
+                reviewRepository.getReviewsByUserId(backendUserId).getOrElse { fallbackError ->
+                    Log.w("AddReviewVM", "No se pudieron obtener reseñas usando backendId: ${fallbackError.message}")
+                    emptyList()
+                }
+            } else {
+                emptyList()
+            }
+
+            val reviews = (firebaseReviews + backendReviews).distinctBy(ReviewInfo::id)
+
+            _uiState.update {
+                it.copy(currentFavoriteCount = reviews.count(ReviewInfo::isFavorite))
             }
         }
     }

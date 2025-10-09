@@ -39,7 +39,8 @@ class ReviewRepository @Inject constructor(
         score: Int,
         albumId: Int,
         userId: String?,
-        firebaseUserId: String
+        firebaseUserId: String,
+        isFavorite: Boolean
     ): Result<Unit> = try {
         val now = System.currentTimeMillis().toString()
         val dto = CreateReviewDto(
@@ -50,7 +51,8 @@ class ReviewRepository @Inject constructor(
             user_id = userId ?: "",
             firebase_user_id = firebaseUserId,
             createdAt = now,
-            updatedAt = now
+            updatedAt = now,
+            is_favorite = isFavorite
         )
         reviewRemoteDataSource.createReview(dto)
         Result.success(Unit)

@@ -142,7 +142,8 @@ fun ReviewDetailScreenLightPreview() {
                     userId = "1",
                     createdAt = "",
                     updatedAt = "",
-                    liked = false
+                    liked = false,
+                    isFavorite = true
                 ),
                 username = "xocas",
                 userProfileUrl = "https://placehold.co/100x100",

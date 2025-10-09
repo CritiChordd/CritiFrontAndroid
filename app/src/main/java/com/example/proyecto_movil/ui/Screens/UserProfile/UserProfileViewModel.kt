@@ -65,7 +65,11 @@ class UserProfileViewModel @Inject constructor(
             }
 
             val reviewItems = buildReviewItems(reviews)
-            val favoriteAlbums = reviewItems.mapNotNull { it.album }.distinctBy(AlbumInfo::id)
+            val favoriteAlbums = reviewItems
+                .filter { it.review.isFavorite }
+                .mapNotNull { it.album }
+                .distinctBy(AlbumInfo::id)
+                .take(5)
 
             _uiState.update {
                 it.copy(
