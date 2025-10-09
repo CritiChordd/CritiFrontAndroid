@@ -29,8 +29,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextOverflow
+import coil.compose.AsyncImage
 import com.example.proyecto_movil.R
 import com.example.proyecto_movil.data.AlbumInfo
 import com.example.proyecto_movil.data.ReviewInfo
@@ -38,6 +39,7 @@ import com.example.proyecto_movil.data.UserInfo
 import com.example.proyecto_movil.data.ArtistInfo
 import com.example.proyecto_movil.data.PlaylistInfo
 import com.example.proyecto_movil.ui.theme.Proyecto_movilTheme
+import kotlin.math.roundToInt
 
 @Composable
 fun UserProfileScreen(
@@ -50,13 +52,6 @@ fun UserProfileScreen(
     onAlbumSelected: (Int) -> Unit = {},
     onReviewSelected: (Int) -> Unit = {}
 ) {
-    // Mapa de álbumes para resolver reseñas -> usa los playlists del usuario
-    val albumMap = remember(user.playlists) {
-        user.playlists
-            .flatMap { it.albums }
-            .associateBy { it.id.toString() }
-    }
-
     val isDark = isSystemInDarkTheme()
     val backgroundRes = if (isDark) R.drawable.fondocriti else R.drawable.fondocriti_light
 
@@ -214,18 +209,11 @@ fun UserProfileScreen(
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                            // forEachIndexed para tener el índice (Int) que el VM espera
-                            state.reviews.forEachIndexed { idx, review ->
-                                val album = albumMap[review.albumId]
-                                if (album != null) {
-                                    ReviewItem(
-                                        review = review,
-                                        album = album,
-                                        onClick = {
-                                            onReviewSelected(idx)
-                                        }
-                                    )
-                                }
+                            state.reviewItems.forEachIndexed { idx, item ->
+                                ReviewItem(
+                                    item = item,
+                                    onClick = { onReviewSelected(idx) }
+                                )
                             }
                         }
 
@@ -247,7 +235,13 @@ fun UserProfileScreen(
 }
 
 @Composable
-private fun ReviewItem(review: ReviewInfo, album: AlbumInfo, onClick: () -> Unit) {
+private fun ReviewItem(item: UserReviewUi, onClick: () -> Unit) {
+    val review = item.review
+    val album = item.album
+    val coverUrl = album?.coverUrl ?: "https://placehold.co/160x160"
+    val albumTitle = album?.title ?: "Álbum desconocido"
+    val artistName = album?.artist?.name ?: "Artista desconocido"
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -255,8 +249,8 @@ private fun ReviewItem(review: ReviewInfo, album: AlbumInfo, onClick: () -> Unit
         verticalAlignment = Alignment.CenterVertically
     ) {
         AsyncImage(
-            model = album.coverUrl,
-            contentDescription = album.title,
+            model = coverUrl,
+            contentDescription = albumTitle,
             modifier = Modifier
                 .size(70.dp)
                 .clip(RoundedCornerShape(6.dp)),
@@ -266,16 +260,26 @@ private fun ReviewItem(review: ReviewInfo, album: AlbumInfo, onClick: () -> Unit
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(
-                album.title.uppercase(),
+                albumTitle.uppercase(),
                 color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold,
                 fontSize = 14.sp
             )
             Text(
-                album.artist.name.uppercase(),
+                artistName.uppercase(),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 12.sp
             )
+            if (review.content.isNotBlank()) {
+                Text(
+                    review.content,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 12.sp,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
             OutlinedButton(
                 onClick = onClick,
                 shape = RoundedCornerShape(50),
@@ -292,7 +296,7 @@ private fun ReviewItem(review: ReviewInfo, album: AlbumInfo, onClick: () -> Unit
             else Color(0xFFC62828)
         Surface(color = scoreColor, shape = RoundedCornerShape(6.dp)) {
             Text(
-                text = "${(review.score * 10)}%",
+                text = "${(review.score * 10).roundToInt()}%",
                 color = Color.White,
                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                 fontWeight = FontWeight.Bold
@@ -348,9 +352,9 @@ private fun UserProfileScreenPreview() {
         ReviewInfo(
             id = "review1",
             content = "Una producción impecable con letras profundas.",
-            score = 8,
+            score = 8.0,
             isLowScore = false,
-            albumId = sampleAlbums[0].id.toString(),
+            albumId = sampleAlbums[0].id,
             userId = sampleUser.id,
             createdAt = "2024-01-01",
             updatedAt = "2024-01-01"
@@ -358,17 +362,24 @@ private fun UserProfileScreenPreview() {
         ReviewInfo(
             id = "review2",
             content = "Ritmos contagiosos ideales para bailar.",
-            score = 9,
+            score = 9.0,
             isLowScore = false,
-            albumId = sampleAlbums[1].id.toString(),
+            albumId = sampleAlbums[1].id,
             userId = sampleUser.id,
             createdAt = "2024-02-14",
             updatedAt = "2024-02-14"
         )
     )
+    val sampleReviewItems = sampleReviews.mapIndexed { index, review ->
+        UserReviewUi(
+            review = review,
+            album = sampleAlbums.getOrNull(index)
+        )
+    }
     val sampleState = UserProfileState(
         user = sampleUser,
         reviews = sampleReviews,
+        reviewItems = sampleReviewItems,
         favoriteAlbums = sampleAlbums
     )
 

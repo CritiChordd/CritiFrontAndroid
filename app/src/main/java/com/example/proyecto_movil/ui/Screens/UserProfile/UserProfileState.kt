@@ -8,6 +8,7 @@ data class UserProfileState(
     val isLoading: Boolean = false,
     val user: UserInfo? = null,
     val reviews: List<ReviewInfo> = emptyList(),
+    val reviewItems: List<UserReviewUi> = emptyList(),
     val favoriteAlbums: List<AlbumInfo> = emptyList(),
     val errorMessage: String? = null,
 
@@ -17,4 +18,9 @@ data class UserProfileState(
     val navigateToEditProfile: Boolean = false,
     val openAlbumId: Int? = null,
     val openReview: Int? = null
+)
+
+data class UserReviewUi(
+    val review: ReviewInfo,
+    val album: AlbumInfo?
 )

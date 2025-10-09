@@ -73,4 +73,13 @@ class UserRepository(
             Result.failure(e)
         }
     }
+
+    suspend fun searchUsersByName(query: String, limit: Int = 10): Result<List<UserInfo>> = withContext(Dispatchers.IO) {
+        try {
+            val users = userFirestoreDataSource.searchUsersByName(query, limit.toLong())
+            Result.success(users)
+        } catch (e: Throwable) {
+            Result.failure(e)
+        }
+    }
 }

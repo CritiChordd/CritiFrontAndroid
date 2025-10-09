@@ -2,9 +2,15 @@ package com.example.proyecto_movil.ui.Screens.UserProfile
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.proyecto_movil.data.AlbumInfo
 import com.example.proyecto_movil.data.ReviewInfo
+import com.example.proyecto_movil.data.repository.AlbumRepository
+import com.example.proyecto_movil.data.repository.ReviewRepository
 import com.example.proyecto_movil.data.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -13,7 +19,9 @@ import javax.inject.Inject
 
 @HiltViewModel
 class UserProfileViewModel @Inject constructor(
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val reviewRepository: ReviewRepository,
+    private val albumRepository: AlbumRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(UserProfileState())
@@ -33,24 +41,72 @@ class UserProfileViewModel @Inject constructor(
     fun loadUser(userId: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-            userRepository.getUserById(userId).fold(
-                onSuccess = { user ->
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            user = user,
-                            reviews = emptyList<ReviewInfo>(),     // cargar si tienes fuente
-                            favoriteAlbums = emptyList()            // cargar si tienes fuente
-                        )
-                    }
-                },
-                onFailure = { e ->
-                    _uiState.update {
-                        it.copy(isLoading = false, errorMessage = e.message ?: "Error cargando usuario")
-                    }
+            val userResult = userRepository.getUserById(userId)
+            val user = userResult.getOrElse { error ->
+                _uiState.update {
+                    it.copy(isLoading = false, errorMessage = error.message ?: "Error cargando usuario")
                 }
-            )
+                return@launch
+            }
+
+            val reviewsResult = reviewRepository.getReviewsByUserId(userId)
+            val reviews = reviewsResult.getOrElse { error ->
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        user = user,
+                        reviews = emptyList(),
+                        reviewItems = emptyList(),
+                        favoriteAlbums = emptyList(),
+                        errorMessage = error.message ?: "Error cargando reseñas"
+                    )
+                }
+                return@launch
+            }
+
+            val reviewItems = buildReviewItems(reviews)
+            val favoriteAlbums = reviewItems.mapNotNull { it.album }.distinctBy(AlbumInfo::id)
+
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    user = user,
+                    reviews = reviews,
+                    reviewItems = reviewItems,
+                    favoriteAlbums = favoriteAlbums
+                )
+            }
         }
+    }
+
+    private suspend fun buildReviewItems(reviews: List<ReviewInfo>): List<UserReviewUi> {
+        if (reviews.isEmpty()) return emptyList()
+
+        val albumIds = reviews.mapNotNull { review ->
+            review.albumId.takeIf { it != 0 }
+        }.distinct()
+
+        val albumMap: Map<Int, AlbumInfo> = coroutineScope {
+            albumIds.map { albumId ->
+                async {
+                    albumRepository.getAlbumById(albumId).getOrNull()?.let { albumId to it }
+                }
+            }.awaitAll()
+                .filterNotNull()
+                .toMap()
+        }
+
+        return reviews.sortedByDescending { review ->
+            review.updatedAt.toLongOrNull()
+                ?: review.createdAt.toLongOrNull()
+                ?: 0L
+        }
+            .map { review ->
+                UserReviewUi(
+                    review = review,
+                    album = albumMap[review.albumId]
+                )
+            }
     }
 
     // Acciones que TU Screen usa
