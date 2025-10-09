@@ -10,5 +10,5 @@ interface AlbumRetrofitService {
     suspend fun getAllAlbums(): List<AlbumDto>
 
     @GET("albums/{id}")
-    suspend fun getAlbumById(@Path("id") albumId: String): AlbumDto
+    suspend fun getAlbumById(@Path("id") albumId: Int): AlbumDto
 }

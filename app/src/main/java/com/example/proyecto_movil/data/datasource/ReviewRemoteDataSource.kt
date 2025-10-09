@@ -5,9 +5,6 @@ import com.example.proyecto_movil.data.dtos.CreateReviewDto
 import com.example.proyecto_movil.data.dtos.ReviewDto
 import kotlinx.coroutines.flow.Flow
 
-/**
- * Contrato para fuentes de datos remotas de reseñas (API).
- */
 interface ReviewRemoteDataSource {
 
   suspend fun getAllReviews(): List<ReviewDto>
@@ -16,6 +13,7 @@ interface ReviewRemoteDataSource {
 
   suspend fun getReviewsByUserId(userId: String): List<ReviewDto>
 
+  suspend fun getReviewsByAlbumId(albumId: String): List<ReviewDto>
 
   suspend fun createReview(review: CreateReviewDto)
 

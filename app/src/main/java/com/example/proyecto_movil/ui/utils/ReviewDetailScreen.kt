@@ -136,10 +136,10 @@ fun ReviewDetailScreenLightPreview() {
                 review = ReviewInfo(
                     id = "1",
                     content = "Una reseña con mucho detalle sobre este increíble álbum.",
-                    score = 9,
+                    score = 9.0,
                     isLowScore = false,
-                    albumId = "10",
-                    userId = "1",
+                    albumId = 10,
+                    userId = 1,
                     createdAt = "",
                     updatedAt = "",
                     liked = false

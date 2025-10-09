@@ -7,5 +7,5 @@ interface AlbumRemoteDataSource {
 
     suspend fun getAllAlbums(): List<AlbumInfo>
 
-    suspend fun getAlbumById(id: String): AlbumInfo
+    suspend fun getAlbumById(id: Int): AlbumInfo
 }

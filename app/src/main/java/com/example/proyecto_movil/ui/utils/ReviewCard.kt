@@ -22,7 +22,7 @@ import com.example.proyecto_movil.ui.theme.Proyecto_movilTheme
 fun ReviewCard(
     review: ReviewInfo,
     modifier: Modifier = Modifier,
-    onUserClick: (String) -> Unit = {} // userId es String en tu modelo
+    onUserClick: (Int) -> Unit = {} // ✅ userId ahora es Int
 ) {
     Card(
         shape = RoundedCornerShape(12.dp),
@@ -37,8 +37,8 @@ fun ReviewCard(
             // ---------- Usuario ----------
             Row(verticalAlignment = Alignment.CenterVertically) {
                 AsyncImage(
-                    model = "https://placehold.co/100x100", // ⚠️ si no tienes foto de usuario en ReviewInfo
-                    contentDescription = review.userId,
+                    model = "https://placehold.co/100x100", // ⚠️ reemplaza si tienes user.profilePic
+                    contentDescription = "Usuario ${review.userId}",
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .size(40.dp)
@@ -47,7 +47,7 @@ fun ReviewCard(
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    text = review.userId, // ⚠️ cámbialo por review.username si lo agregas a ReviewInfo
+                    text = "Usuario ${review.userId}", // ✅ convertir Int a String
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -58,8 +58,8 @@ fun ReviewCard(
             // ---------- Álbum + artista ----------
             Row(verticalAlignment = Alignment.CenterVertically) {
                 AsyncImage(
-                    model = "https://placehold.co/200x200", // ⚠️ si no tienes cover en ReviewInfo
-                    contentDescription = review.albumId,
+                    model = "https://placehold.co/200x200", // ⚠️ reemplaza si tienes cover
+                    contentDescription = "Álbum ${review.albumId}",
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .size(60.dp)
@@ -69,17 +69,17 @@ fun ReviewCard(
                 Spacer(Modifier.width(12.dp))
                 Column {
                     Text(
-                        text = review.albumId, // ⚠️ cámbialo por review.albumTitle si existe en tu modelo
+                        text = "Álbum ${review.albumId}", // ✅ convertir Int a texto
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = "Artista desconocido", // ⚠️ agrega artistName a ReviewInfo si lo necesitas
+                        text = "Artista desconocido", // ⚠️ opcional si agregas artistName
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 12.sp
                     )
                     Text(
-                        text = "(Año ?)", // ⚠️ agrega albumYear a ReviewInfo si lo necesitas
+                        text = "(Año ?)",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 12.sp
                     )
@@ -110,7 +110,7 @@ fun ReviewCard(
                 modifier = Modifier.align(Alignment.End)
             ) {
                 Text(
-                    text = "${(review.score * 10)}%",
+                    text = "${(review.score * 10).toInt()}%", // ✅ convertir a texto y entero
                     color = MaterialTheme.colorScheme.onPrimary,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
@@ -119,4 +119,3 @@ fun ReviewCard(
         }
     }
 }
-

@@ -1,25 +1,18 @@
 package com.example.proyecto_movil.uiViews.homePage
 
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.tooling.preview.Preview
 import com.example.proyecto_movil.R
 import com.example.proyecto_movil.data.AlbumInfo
 import com.example.proyecto_movil.ui.Screens.Home.HomeViewModel
@@ -39,42 +32,43 @@ fun HomeScreen(
     val backgroundRes = if (isDark) R.drawable.fondocriti else R.drawable.fondocriti_light
 
     ScreenBackground(backgroundRes = backgroundRes, modifier = modifier) {
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 16.dp, vertical = 16.dp)
+                .padding(horizontal = 16.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp),
+            contentPadding = PaddingValues(bottom = 32.dp)
         ) {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-                contentPadding = PaddingValues(bottom = 16.dp)
-            ) {
-                item {
-                    SectionRow(
-                        title = "Novedades",
-                        albums = viewModel.getNewReleases(),
-                        onAlbumClick = { album -> viewModel.onAlbumClicked(album) }
-                    )
-                }
-                item {
-                    SectionRow(
-                        title = "Nuevo entre amigos",
-                        albums = state.albumList,
-                        onAlbumClick = { album -> viewModel.onAlbumClicked(album) }
-                    )
-                }
-                item {
-                    SectionRow(
-                        title = "Popular entre amigos",
-                        albums = viewModel.getPopularAlbums(),
-                        onAlbumClick = { album -> viewModel.onAlbumClicked(album) }
-                    )
-                }
+            // 🔹 Sección: Novedades
+            item {
+                SectionRow(
+                    title = "Novedades",
+                    albums = viewModel.getNewReleases(),
+                    onAlbumClick = { album -> viewModel.onAlbumClicked(album) }
+                )
+            }
+
+            // 🔹 Sección: Nuevo entre amigos
+            item {
+                SectionRow(
+                    title = "Nuevo entre amigos",
+                    albums = state.albumList,
+                    onAlbumClick = { album -> viewModel.onAlbumClicked(album) }
+                )
+            }
+
+            // 🔹 Sección: Popular entre amigos
+            item {
+                SectionRow(
+                    title = "Popular entre amigos",
+                    albums = viewModel.getPopularAlbums(),
+                    onAlbumClick = { album -> viewModel.onAlbumClicked(album) }
+                )
             }
         }
     }
 
-    // Side-effects: abrir álbum
+    // Efecto de navegación
     LaunchedEffect(state.openAlbum) {
         state.openAlbum?.let {
             onAlbumClick(it)
@@ -98,12 +92,14 @@ private fun SectionRow(
             color = MaterialTheme.colorScheme.onBackground
         )
         Spacer(Modifier.height(8.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            albums.forEach { album ->
+
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(horizontal = 8.dp)
+        ) {
+            items(albums) { album ->
                 AlbumCard(album = album) { onAlbumClick(album) }
             }
         }
     }
 }
-
-

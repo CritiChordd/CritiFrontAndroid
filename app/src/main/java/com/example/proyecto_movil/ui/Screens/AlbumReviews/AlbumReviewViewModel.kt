@@ -1,5 +1,6 @@
 package com.example.proyecto_movil.ui.Screens.AlbumReviews
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.proyecto_movil.data.ReviewInfo
@@ -18,18 +19,16 @@ class AlbumReviewViewModel @Inject constructor(
     private val albumRepository: AlbumRepository
 ) : ViewModel() {
 
-    // ✅ El estado interno debe ser del tipo AlbumReviewState, no List<ReviewInfo>
-    private val _uiState: MutableStateFlow<AlbumReviewState> = MutableStateFlow(AlbumReviewState())
+    private val _uiState = MutableStateFlow(AlbumReviewState())
     val uiState: StateFlow<AlbumReviewState> = _uiState
 
-    /** Cargar reseñas de un álbum por ID */
     fun setAlbumById(albumId: Int) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
 
             try {
-                // Obtener info del álbum
-                val albumResult = albumRepository.getAlbumById(albumId.toString())
+                // 🔹 1. Obtener el álbum
+                val albumResult = albumRepository.getAlbumById(albumId)
                 val album = albumResult.getOrNull()
 
                 if (album == null) {
@@ -43,21 +42,21 @@ class AlbumReviewViewModel @Inject constructor(
                     return@launch
                 }
 
-                // ⚠️ Mientras implementas reviews por álbum, pido por usuario para que compile.
-                // Si tu repo expone getReviewsByAlbumId(albumId: String), úsalo aquí.
-                val reviewsResult = reviewRepository.getReviewsByUserId(
-                    // Usa el identificador que tengas disponible; acá dejo album.id como string.
-                    album.id.toString()
-                )
+                // 🔹 2. Obtener las reseñas del álbum
+                val reviewsResult = reviewRepository.getReviewsByAlbumId(album.id)
+                val reviews: List<ReviewInfo> = reviewsResult.getOrElse {
+                    Log.e("AlbumReviewVM", "❌ Error obteniendo reseñas: ${it.message}")
+                    emptyList()
+                }
 
-                val reviews: List<ReviewInfo> = reviewsResult.getOrElse { emptyList() }
+                Log.d("AlbumReviewVM", "📀 Album '${album.title}' tiene ${reviews.size} reseñas")
 
-                // Promedio simple (Int?) para encajar con tu estado previo
+                // 🔹 3. Calcular promedio
                 val avg: Int? = if (reviews.isNotEmpty()) {
-                    reviews.sumOf { it.score } / reviews.size
+                    (reviews.sumOf { it.score } / reviews.size).toInt()
                 } else null
 
-                // Actualizar estado de pantalla
+                // 🔹 4. Actualizar el estado
                 _uiState.update {
                     it.copy(
                         albumId = album.id,
@@ -73,7 +72,9 @@ class AlbumReviewViewModel @Inject constructor(
                         message = null
                     )
                 }
+
             } catch (e: Exception) {
+                Log.e("AlbumReviewVM", "❌ Error en setAlbumById: ${e.localizedMessage}")
                 _uiState.update {
                     it.copy(
                         showMessage = true,
@@ -86,9 +87,9 @@ class AlbumReviewViewModel @Inject constructor(
     }
 
     // ---------- Navegación ----------
-    fun onArtistClicked() { _uiState.update { it.copy(navigateToArtist = true) } }
-    fun consumeNavigateArtist() { _uiState.update { it.copy(navigateToArtist = false) } }
+    fun onArtistClicked() = _uiState.update { it.copy(navigateToArtist = true) }
+    fun consumeNavigateArtist() = _uiState.update { it.copy(navigateToArtist = false) }
 
-    fun onUserClicked(userId: String) { _uiState.update { it.copy(openUserId = userId) } }
-    fun consumeOpenUser() { _uiState.update { it.copy(openUserId = null) } }
+    fun onUserClicked(userId: Int) = _uiState.update { it.copy(openUserId = userId) }
+    fun consumeOpenUser() = _uiState.update { it.copy(openUserId = null) }
 }

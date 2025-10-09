@@ -19,7 +19,7 @@ class AlbumRepository @Inject constructor(
         }
     }
 
-    suspend fun getAlbumById(id: String): Result<AlbumInfo> {
+    suspend fun getAlbumById(id: Int): Result<AlbumInfo> {
         return try {
             val album = albumRemoteDataSource.getAlbumById(id)
             Result.success(album)
