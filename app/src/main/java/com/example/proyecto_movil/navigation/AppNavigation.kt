@@ -121,6 +121,10 @@ fun AppNavHost(
                 viewModel = vm,
                 onAlbumClick = { album: AlbumInfo ->
                     navController.navigate(Screen.Album.createRoute(album.id))
+                },
+                modifier = Modifier,
+                onReviewProfileImageClicked = { uid: String ->
+                    navController.navigate(Screen.Profile.createRoute(uid))
                 }
             )
         }
@@ -182,7 +186,8 @@ fun AppNavHost(
                         onSettingsClick = vm::onSettingsClicked,
                         onEditProfile = vm::onEditProfileClicked,
                         onAlbumSelected = vm::onAlbumClicked,
-                        onReviewSelected = vm::onReviewClicked
+                        onReviewSelected = vm::onReviewClicked,
+                        onReviewProfileImageClicked = TODO(),
                     )
                 }
                 else -> SimpleError(state.errorMessage ?: "Usuario no encontrado")

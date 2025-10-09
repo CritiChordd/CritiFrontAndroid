@@ -27,7 +27,8 @@ import coil.compose.AsyncImage
 @Composable
 fun AlbumCard(
     album: AlbumInfo,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onReviewProfileImageClicked: (String) -> Unit
 ) {
     Log.d("AlbumCard", "📀 Album: ${album.title}, Cover: ${album.coverUrl}")
     Column(

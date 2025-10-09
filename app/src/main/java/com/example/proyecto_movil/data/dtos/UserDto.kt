@@ -14,6 +14,7 @@ data class UserProfileDto(
     val following: Int,
     val createdAt: String,
     val updatedAt: String,
+    val name: String
 )
 
 /** Mapeo DTO -> UI model */
@@ -25,7 +26,8 @@ fun UserProfileDto.toUserUI(): UserInfo {
         bio = bio,
         followers = followers,
         following = following,
-        playlists = emptyList()
+        playlists = emptyList(),
+        name = name
     )
 }
 

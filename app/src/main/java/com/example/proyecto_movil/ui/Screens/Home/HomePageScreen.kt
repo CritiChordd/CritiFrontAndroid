@@ -31,7 +31,8 @@ import com.example.proyecto_movil.ui.utils.AlbumCard
 fun HomeScreen(
     viewModel: HomeViewModel,
     modifier: Modifier = Modifier,
-    onAlbumClick: (AlbumInfo) -> Unit = {}
+    onAlbumClick: (AlbumInfo) -> Unit = {},
+    onReviewProfileImageClicked: (String) -> Unit
 ) {
     val state by viewModel.uiState.collectAsState()
 
@@ -100,7 +101,11 @@ private fun SectionRow(
         Spacer(Modifier.height(8.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             albums.forEach { album ->
-                AlbumCard(album = album) { onAlbumClick(album) }
+                AlbumCard(
+                    album = album,
+                    onClick = { onAlbumClick(album) },
+                    onReviewProfileImageClicked = TODO(),
+                )
             }
         }
     }

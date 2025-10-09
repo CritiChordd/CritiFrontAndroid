@@ -1,6 +1,7 @@
 package com.example.proyecto_movil.data.datasource.impl.firestore
 
 import com.example.proyecto_movil.data.UserInfo
+import com.example.proyecto_movil.data.dtos.ReviewDto
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
 
@@ -10,6 +11,7 @@ class UserFirestoreDataSourceImpl(
     private val collection = db.collection("users")
 
     suspend fun getUserById(id: String): UserInfo {
+        val docRef = db.collection("users").document(id)
         val snap = collection.document(id).get().await()
         if (!snap.exists()) throw IllegalStateException("Usuario no encontrado en Firestore: $id")
 
@@ -22,7 +24,8 @@ class UserFirestoreDataSourceImpl(
             bio = data["bio"]?.toString().orEmpty(),
             followers = (data["followers"] as? Number)?.toInt() ?: 0,
             following = (data["following"] as? Number)?.toInt() ?: 0,
-            playlists = emptyList()
+            playlists = emptyList(),
+            name = data["name"]?.toString().orEmpty()
         )
     }
 
@@ -44,6 +47,14 @@ class UserFirestoreDataSourceImpl(
         )
         collection.document(id).set(doc).await()
     }
+  suspend fun getUserReviews(id: String): List<ReviewDto> {
+       val snapshot = db.collection("reviews").whereEqualTo("userId", id).get().await()
+       return snapshot.documents.map { doc ->
+         val review = doc.toObject(ReviewDto::class.java)
+         review?.copy(id = doc.id) ?: throw Exception("Review not found")
+       }
+
+   }
 
     suspend fun updateUser(
         id: String,

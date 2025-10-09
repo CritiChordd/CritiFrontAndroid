@@ -258,7 +258,8 @@ private fun AlbumGrid(
         ) { album ->
             AlbumCard(
                 album = album,
-                onClick = { onOpen(album.id) }
+                onClick = { onOpen(album.id) },
+                onReviewProfileImageClicked = TODO()
             )
         }
     }

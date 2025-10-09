@@ -45,6 +45,7 @@ fun UserProfileScreen(
     user: UserInfo,
     onBackClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
+    onReviewProfileImageClicked: (String) -> Unit,
     onEditProfile: () -> Unit = {},
     onAlbumSelected: (Int) -> Unit = {},
     onReviewSelected: (Int) -> Unit = {}
@@ -340,7 +341,8 @@ private fun UserProfileScreenPreview() {
         bio = "Fan de los sintetizadores y las reseñas extensas.",
         followers = 128,
         following = 87,
-        playlists = samplePlaylists
+        playlists = samplePlaylists,
+        name = "CritiLover",
     )
     val sampleReviews = listOf(
         ReviewInfo(
@@ -373,7 +375,13 @@ private fun UserProfileScreenPreview() {
     Proyecto_movilTheme {
         UserProfileScreen(
             state = sampleState,
-            user = sampleUser
+            user = sampleUser,
+            onBackClick = {},
+            onSettingsClick = {},
+            onEditProfile = {},
+            onAlbumSelected = {},
+            onReviewSelected = {},
+            onReviewProfileImageClicked = {}
         )
     }
 }

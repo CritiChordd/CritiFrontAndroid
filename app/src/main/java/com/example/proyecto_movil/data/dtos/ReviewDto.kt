@@ -9,10 +9,11 @@ data class ReviewDto(
     val is_low_score: Boolean,
     val album_id: String,
     val user_id: String,
+    val parentReviewId: String,
     val createdAt: String,
     val updatedAt: String
 ) {
-    constructor() : this("", "", 0, false, "", "", "", "")
+    constructor() : this("", "", 0, false, "", "", "", "", "")
 }
 
 

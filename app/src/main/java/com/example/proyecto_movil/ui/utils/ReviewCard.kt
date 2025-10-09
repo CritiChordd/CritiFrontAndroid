@@ -64,6 +64,7 @@ fun ReviewCard(
                     modifier = Modifier
                         .size(60.dp)
                         .clip(RoundedCornerShape(8.dp))
+
                 )
 
                 Spacer(Modifier.width(12.dp))

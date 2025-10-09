@@ -87,7 +87,11 @@ object AppModule {
     fun provideAlbumRepository(ds: AlbumRetrofitDataSourceImpl) = AlbumRepository(ds)
 
     @Singleton @Provides
-    fun provideReviewRepository(ds: ReviewRetrofitDataSourceImplement) = ReviewRepository(ds)
+    fun provideReviewRepository(ds: ReviewRetrofitDataSourceImplement) = ReviewRepository(
+        ds,
+        userRemoteDataSource = TODO(),
+        authRemoteDataSource = TODO()
+    )
 
     @Singleton @Provides
     fun providePlaylistRepository(ds: PlaylistRetrofitDataSourceImpl) = PlaylistRepository(ds)

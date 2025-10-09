@@ -42,6 +42,8 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+
+
     fun onAlbumClicked(album: AlbumInfo) =
         _uiState.update { it.copy(openAlbum = album) }
 
