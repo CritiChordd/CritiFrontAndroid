@@ -2,14 +2,20 @@ package com.example.proyecto_movil.data.repository
 
 import coil.network.HttpException
 import com.example.proyecto_movil.data.ReviewInfo
+import com.example.proyecto_movil.data.datasource.AuthRemoteDataSource
+import com.example.proyecto_movil.data.datasource.impl.firestore.UserFirestoreDataSourceImpl
 import com.example.proyecto_movil.data.datasource.impl.retrofit.ReviewRetrofitDataSourceImplement
 import com.example.proyecto_movil.data.dtos.CreateReviewDto
+import com.example.proyecto_movil.data.dtos.CreateReviewUserDto
 import com.example.proyecto_movil.data.dtos.toReviewInfo
 
 import javax.inject.Inject
 
 class ReviewRepository @Inject constructor(
-    private val reviewRemoteDataSource: ReviewRetrofitDataSourceImplement)
+    private val reviewRemoteDataSource: ReviewRetrofitDataSourceImplement,
+    private val userRemoteDataSource: UserFirestoreDataSourceImpl,
+    private val authRemoteDataSource: AuthRemoteDataSource
+    )
 {
     suspend fun getReviewsByUserId(userId: String): Result<List<ReviewInfo>> {
         return try {
@@ -23,14 +29,17 @@ class ReviewRepository @Inject constructor(
         }
     }
 
-
-    suspend fun createReview(
-        content: String,
-        score: Int,
-        albumId: String,
-        userId: String
-    ): Result<Unit> {
+    suspend fun createReview(content: String, score: Int, albumId: String, userId: String): Result<Unit> {
         return try {
+            val user = userRemoteDataSource.getUserById(userId)
+            val photoUrl = authRemoteDataSource.currentUser?.photoUrl?.toString()
+            val createReviewUserDto = CreateReviewUserDto(
+                name = user.name,
+                username = user.username,
+                profile_pic = photoUrl
+
+
+            )
             val isLowScore = score < 50
 
             val createReviewDto = CreateReviewDto(
