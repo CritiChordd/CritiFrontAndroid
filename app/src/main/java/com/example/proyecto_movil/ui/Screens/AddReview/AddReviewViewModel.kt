@@ -4,21 +4,31 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.proyecto_movil.data.AlbumInfo
+import com.example.proyecto_movil.data.repository.AlbumRepository
 import com.example.proyecto_movil.data.repository.ReviewRepository
+import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlin.math.roundToInt
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import retrofit2.HttpException
 
 @HiltViewModel
 class AddReviewViewModel @Inject constructor(
-    private val reviewRepository: ReviewRepository
+    private val reviewRepository: ReviewRepository,
+    private val albumRepository: AlbumRepository,
+    private val auth: FirebaseAuth
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AddReviewState())
     val uiState: StateFlow<AddReviewState> = _uiState
+
+    init {
+        loadAlbums()
+    }
 
     /* ---------- Navegación ---------- */
 
@@ -33,8 +43,19 @@ class AddReviewViewModel @Inject constructor(
 
     /* ---------- Publicar Reseña ---------- */
 
-    fun onPublishClicked(userId: Int = 1) {
+    fun onPublishClicked() {
         val s = _uiState.value
+
+        val currentUserId = auth.currentUser?.uid
+        if (currentUserId.isNullOrBlank()) {
+            _uiState.update {
+                it.copy(
+                    showMessage = true,
+                    errorMessage = "Debes iniciar sesión para publicar reseñas"
+                )
+            }
+            return
+        }
 
         // 🧩 Validaciones
         when {
@@ -65,11 +86,12 @@ class AddReviewViewModel @Inject constructor(
         // 🚀 Enviar al backend
         viewModelScope.launch {
             try {
+                val normalizedScore = (s.scorePercent / 10.0).roundToInt()
                 val result = reviewRepository.createReview(
                     content = s.reviewText,
-                    score = s.scorePercent,
-                    albumId = s.albumId,
-                    userId = userId
+                    score = normalizedScore,
+                    albumId = s.albumId!!.toString(),
+                    userId = currentUserId
                 )
 
                 if (result.isSuccess) {
@@ -85,11 +107,17 @@ class AddReviewViewModel @Inject constructor(
                     }
                 }
             } catch (e: Exception) {
-                Log.e("AddReviewVM", "⚠️ Error de red o servidor", e)
+                val logMessage = if (e is HttpException) {
+                    val errorBody = e.response()?.errorBody()?.string()
+                    "⚠️ Error HTTP ${e.code()} ${e.message()} -> $errorBody"
+                } else {
+                    "⚠️ Error de red o servidor"
+                }
+                Log.e("AddReviewVM", logMessage, e)
                 _uiState.update {
                     it.copy(
                         showMessage = true,
-                        errorMessage = "Error de red o servidor: ${e.message}"
+                        errorMessage = e.message ?: "No se pudo publicar la reseña"
                     )
                 }
             }
@@ -114,10 +142,66 @@ class AddReviewViewModel @Inject constructor(
                 albumTitle = album.title,
                 albumArtist = album.artist.name,
                 albumYear = album.year,
-                albumCoverRes = album.coverUrl
+                albumCoverRes = album.coverUrl,
+                showMessage = false,
+                errorMessage = ""
             )
         }
 
     fun onSettingsClicked() =
         _uiState.update { it.copy(navigateToSettings = true) }
+
+    private fun loadAlbums() {
+        viewModelScope.launch {
+            try {
+                val albums = albumRepository.getAllAlbums().getOrElse {
+                    Log.e("AddReviewVM", "❌ Error cargando álbumes", it)
+                    emptyList()
+                }
+
+                _uiState.update { current ->
+                    when {
+                        albums.isEmpty() -> current.copy(
+                            availableAlbums = emptyList(),
+                            albumId = null,
+                            albumTitle = "",
+                            albumArtist = "",
+                            albumYear = "",
+                            albumCoverRes = "",
+                            showMessage = true,
+                            errorMessage = "No hay álbumes disponibles para reseñar todavía"
+                        )
+
+                        current.albumId != null -> current.copy(
+                            availableAlbums = albums,
+                            showMessage = false,
+                            errorMessage = ""
+                        )
+
+                        else -> {
+                            val first = albums.first()
+                            current.copy(
+                                availableAlbums = albums,
+                                albumId = first.id,
+                                albumTitle = first.title,
+                                albumArtist = first.artist.name,
+                                albumYear = first.year,
+                                albumCoverRes = first.coverUrl,
+                                showMessage = false,
+                                errorMessage = ""
+                            )
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("AddReviewVM", "⚠️ Error inesperado cargando álbumes", e)
+                _uiState.update {
+                    it.copy(
+                        showMessage = true,
+                        errorMessage = "No se pudieron cargar los álbumes disponibles"
+                    )
+                }
+            }
+        }
+    }
 }

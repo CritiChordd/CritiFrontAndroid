@@ -11,7 +11,8 @@ data class UserInfo(
     val bio: String = "",
     val followers: Int = 0,
     val following: Int = 0,
-    val playlists: List<PlaylistInfo> = emptyList()
+    val playlists: List<PlaylistInfo> = emptyList(),
+    val backendUserId: Int? = null
 ) : Parcelable {
     
     // Alias para pantallas que usan 'avatarUrl'

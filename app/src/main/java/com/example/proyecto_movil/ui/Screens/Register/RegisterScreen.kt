@@ -21,6 +21,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import com.example.proyecto_movil.R
 import com.example.proyecto_movil.ui.utils.*
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -98,7 +99,13 @@ fun RegisterScreen(
             )
 
             // ← Volver (directo, sin pasar por VM)
-            IconButton(onClick = onBack, modifier = Modifier.padding(10.dp)) {
+            IconButton(
+                onClick = onBack,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(10.dp)
+                    .zIndex(1f)
+            ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Volver",
@@ -110,6 +117,7 @@ fun RegisterScreen(
                 verticalArrangement = Arrangement.Top,
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
+                    .align(Alignment.TopCenter)
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
                     .imePadding()

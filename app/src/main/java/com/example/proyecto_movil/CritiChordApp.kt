@@ -15,6 +15,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
@@ -30,6 +31,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.example.proyecto_movil.navigation.AppNavHost
 import com.example.proyecto_movil.navigation.Screen
+import com.google.firebase.auth.FirebaseAuth
 
 @Composable
 fun CritiChordApp() {
@@ -57,12 +59,6 @@ data class BottomNavItem(
     val route: String
 )
 
-val bottomNavItems = listOf(
-    BottomNavItem(Icons.Filled.Home, Icons.Outlined.Home, Screen.Home.route),
-    BottomNavItem(Icons.Filled.AddCircle, Icons.Outlined.AddCircle, Screen.AddReview.route),
-    BottomNavItem(Icons.Filled.Person, Icons.Outlined.Person, Screen.Profile.createRoute(6)),
-)
-
 @Composable
 fun TwitterBottomNavigationBar(
     navController: NavHostController,
@@ -71,9 +67,25 @@ fun TwitterBottomNavigationBar(
     val navBackStackEntry = navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry.value?.destination?.route
 
+    val currentUid = FirebaseAuth.getInstance().currentUser?.uid
+    val items = remember(currentUid) {
+        listOf(
+            BottomNavItem(Icons.Filled.Home, Icons.Outlined.Home, Screen.Home.route),
+            BottomNavItem(Icons.Filled.AddCircle, Icons.Outlined.AddCircle, Screen.AddReview.route),
+            BottomNavItem(
+                Icons.Filled.Person,
+                Icons.Outlined.Person,
+                currentUid?.let { Screen.Profile.createRoute(it) } ?: Screen.Login.route
+            )
+        )
+    }
+
+    val currentBaseRoute = currentRoute?.substringBefore("/")
+
     NavigationBar(modifier = modifier) {
-        bottomNavItems.forEach { item ->
-            val isSelected = currentRoute == item.route
+        items.forEach { item ->
+            val itemBaseRoute = item.route.substringBefore("/")
+            val isSelected = currentBaseRoute == itemBaseRoute
 
             NavigationBarItem(
                 icon = {
@@ -83,7 +95,11 @@ fun TwitterBottomNavigationBar(
                     )
                 },
                 selected = isSelected,
-                onClick = { navController.navigate(item.route) }
+                onClick = {
+                    navController.navigate(item.route) {
+                        launchSingleTop = true
+                    }
+                }
             )
         }
     }

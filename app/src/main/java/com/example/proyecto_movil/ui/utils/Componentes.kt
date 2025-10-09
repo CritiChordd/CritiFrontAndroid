@@ -3,6 +3,7 @@ package com.example.proyecto_movil.ui.utils
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -77,7 +78,7 @@ fun YatienesCuenta(
         fontSize = 15.sp,
         fontWeight = FontWeight.Light,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = modifier
+        modifier = modifier.clickable(onClick = onClick)
     )
 }
 

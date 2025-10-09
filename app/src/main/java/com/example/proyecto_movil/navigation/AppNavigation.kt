@@ -2,6 +2,7 @@ package com.example.proyecto_movil.navigation
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -38,6 +39,7 @@ import com.example.proyecto_movil.ui.Screens.AddReview.AddReviewViewModel
 import com.example.proyecto_movil.ui.Screens.EditProfile.EditarPerfilScreen
 import com.example.proyecto_movil.ui.Screens.EditProfile.EditProfileViewModel
 import com.example.proyecto_movil.ui.Screens.AlbumReviews.AlbumReviewScreen
+import com.example.proyecto_movil.ui.Screens.AlbumReviews.AlbumReviewViewModel
 import com.example.proyecto_movil.ui.theme.Proyecto_movilTheme
 import com.google.firebase.auth.FirebaseAuth
 
@@ -134,21 +136,56 @@ fun AppNavHost(
             LaunchedEffect(uid) { if (uid.isNotBlank()) vm.setInitialData(uid) }
             val state = vm.uiState.collectAsState().value
 
-            if (state.user != null) {
-                UserProfileScreen(
-                    viewModel = vm,
-                    user = state.user,
-                    reviews = state.reviews,
-                    onBackClick = { navController.navigateUp() },
-                    onAlbumClick = { album ->
+            LaunchedEffect(state.navigateBack) {
+                if (state.navigateBack) {
+                    navController.navigateUp()
+                    vm.consumeBack()
+                }
+            }
+            LaunchedEffect(state.navigateToSettings) {
+                if (state.navigateToSettings) {
+                    navController.navigate(Screen.Settings.route)
+                    vm.consumeSettings()
+                }
+            }
+            LaunchedEffect(state.navigateToEditProfile) {
+                if (state.navigateToEditProfile) {
+                    navController.navigate(Screen.EditProfile.route)
+                    vm.consumeEdit()
+                }
+            }
+            LaunchedEffect(state.openAlbumId) {
+                val albumId = state.openAlbumId
+                if (albumId != null) {
+                    val album = state.favoriteAlbums.firstOrNull { it.id == albumId }
+                    if (album != null) {
                         navController.navigate(Screen.Album.createRoute(album.id))
-                    },
-                    onReviewClick = { /* TODO */ },
-                    onSettingsClick = { navController.navigate(Screen.Settings.route) },
-                    onEditProfile = { navController.navigate(Screen.EditProfile.route) }
-                )
-            } else {
-                SimpleError("Usuario no encontrado")
+                    }
+                    vm.consumeOpenAlbum()
+                }
+            }
+            LaunchedEffect(state.openReview) {
+                val reviewIndex = state.openReview
+                if (reviewIndex != null) {
+                    // TODO: navegar a detalle de reseña cuando exista pantalla
+                    vm.consumeOpenReview()
+                }
+            }
+
+            when {
+                state.isLoading -> SimpleLoading()
+                state.user != null -> {
+                    UserProfileScreen(
+                        state = state,
+                        user = state.user,
+                        onBackClick = vm::onBackClicked,
+                        onSettingsClick = vm::onSettingsClicked,
+                        onEditProfile = vm::onEditProfileClicked,
+                        onAlbumSelected = vm::onAlbumClicked,
+                        onReviewSelected = vm::onReviewClicked
+                    )
+                }
+                else -> SimpleError(state.errorMessage ?: "Usuario no encontrado")
             }
         }
 
@@ -159,6 +196,7 @@ fun AppNavHost(
         ) { backStackEntry ->
             val albumId = backStackEntry.arguments?.getInt("albumId")
             val vm: ContentViewModel = hiltViewModel()
+            val albumReviewVm: AlbumReviewViewModel = hiltViewModel()
 
             LaunchedEffect(albumId) { vm.setInitial(artistId = null, isOwner = false) }
             val state = vm.uiState.collectAsState().value
@@ -167,13 +205,12 @@ fun AppNavHost(
             if (selectedAlbum != null) {
                 AlbumReviewScreen(
                     album = selectedAlbum,
+                    viewModel = albumReviewVm,
                     onArtistClick = {
                         navController.navigate(Screen.ContentArtist.createRoute(selectedAlbum.artist.id))
                     },
-                    onUserClick = { anyUid ->
-                        // Si viene Int, toString(); si ya es String, úsalo.
-                        val uidString = anyUid.toString()
-                        navController.navigate(Screen.Profile.createRoute(uidString))
+                    onUserClick = { userId ->
+                        navController.navigate(Screen.Profile.createRoute(userId))
                     }
                 )
             } else {
@@ -244,7 +281,6 @@ fun AppNavHost(
             val vm: AddReviewViewModel = hiltViewModel()
             AddReviewScreen(
                 viewModel = vm,
-                albumList = emptyList(),
                 onCancel = { navController.navigateUp() },
                 onPublished = { _, _, _, _ -> navController.navigateUp() }
             )
@@ -257,6 +293,13 @@ fun AppNavHost(
 private fun SimpleError(message: String) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Text(text = message, color = MaterialTheme.colorScheme.onBackground)
+    }
+}
+
+@Composable
+private fun SimpleLoading() {
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        CircularProgressIndicator()
     }
 }
 
