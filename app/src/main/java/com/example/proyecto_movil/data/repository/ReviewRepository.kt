@@ -29,22 +29,20 @@ class ReviewRepository @Inject constructor(
         }
     }
 
-    suspend fun createReview(content: String, score: Int, albumId: String, userId: String): Result<Unit> {
+
+    suspend fun createReview(
+        content: String,
+        score: Int,
+        albumId: String,
+        userId: String
+    ): Result<Unit> {
         return try {
-            val user = userRemoteDataSource.getUserById(userId)
-            val photoUrl = authRemoteDataSource.currentUser?.photoUrl?.toString()
-            val createReviewUserDto = CreateReviewUserDto(
-                name = user.name,
-                username = user.username,
-                profile_pic = photoUrl
-
-
-            )
-            val isLowScore = score < 50
+            val boundedScore = score.coerceIn(0, 10)
+            val isLowScore = boundedScore < 5
 
             val createReviewDto = CreateReviewDto(
                 content = content,
-                score = score,
+                score = boundedScore,
                 is_low_score = isLowScore,
                 album_id = albumId,
                 user_id = userId

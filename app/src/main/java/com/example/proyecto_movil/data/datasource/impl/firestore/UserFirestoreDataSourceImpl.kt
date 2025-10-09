@@ -15,14 +15,39 @@ class UserFirestoreDataSourceImpl(
 
         val data = snap.data.orEmpty()
 
+        val resolvedUsername = sequenceOf(
+            data["username"],
+            data["name"],
+            data["displayName"],
+            data["email"]
+        )
+            .mapNotNull { it?.toString() }
+            .firstOrNull { it.isNotBlank() }
+            .orEmpty()
+
+        val resolvedAvatar = data["profileImageUrl"]
+            ?: data["profileImageURL"]
+            ?: data["profile_pic"]
+
+        fun Any?.asBackendId(): String? = when (this) {
+            is Number -> this.toLong().toString()
+            is String -> this.takeIf { it.isNotBlank() }
+            else -> null
+        }
+
+        val backendId = data["backendUserId"].asBackendId()
+            ?: data["apiUserId"].asBackendId()
+            ?: data["numericId"].asBackendId()
+
         return UserInfo(
             id = data["id"]?.toString() ?: id,                         // ← String
-            username = data["username"]?.toString().orEmpty(),
-            profileImageUrl = data["profileImageUrl"]?.toString().orEmpty(),
+            username = resolvedUsername,
+            profileImageUrl = resolvedAvatar?.toString().orEmpty(),
             bio = data["bio"]?.toString().orEmpty(),
             followers = (data["followers"] as? Number)?.toInt() ?: 0,
             following = (data["following"] as? Number)?.toInt() ?: 0,
-            playlists = emptyList()
+            playlists = emptyList(),
+            backendUserId = backendId
         )
     }
 
@@ -31,7 +56,8 @@ class UserFirestoreDataSourceImpl(
         username: String,
         email: String,
         bio: String = "",
-        profilePic: String? = null
+        profilePic: String? = null,
+        name: String? = null
     ) {
         val doc = mapOf(
             "id" to id,                               // ← guardado como String
@@ -39,6 +65,7 @@ class UserFirestoreDataSourceImpl(
             "email" to email,
             "bio" to bio,
             "profileImageUrl" to (profilePic ?: ""),
+            "name" to (name ?: ""),
             "followers" to 0,
             "following" to 0
         )

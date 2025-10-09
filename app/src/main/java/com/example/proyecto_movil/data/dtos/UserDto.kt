@@ -25,7 +25,8 @@ fun UserProfileDto.toUserUI(): UserInfo {
         bio = bio,
         followers = followers,
         following = following,
-        playlists = emptyList()
+        playlists = emptyList(),
+        backendUserId = id.takeIf { it.isNotBlank() }
     )
 }
 
