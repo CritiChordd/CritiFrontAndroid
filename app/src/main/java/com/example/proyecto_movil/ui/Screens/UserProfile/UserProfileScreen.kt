@@ -27,51 +27,20 @@ import com.example.proyecto_movil.R
 import com.example.proyecto_movil.data.AlbumInfo
 import com.example.proyecto_movil.data.ReviewInfo
 import com.example.proyecto_movil.data.UserInfo
+import com.example.proyecto_movil.data.ArtistInfo
+import com.example.proyecto_movil.data.PlaylistInfo
+import com.example.proyecto_movil.ui.theme.Proyecto_movilTheme
 
 @Composable
 fun UserProfileScreen(
-    viewModel: UserProfileViewModel,
+    state: UserProfileState,
     user: UserInfo,
-    reviews: List<ReviewInfo>,
     onBackClick: () -> Unit = {},
-    onAlbumClick: (AlbumInfo) -> Unit = {},
-    onReviewClick: (ReviewInfo) -> Unit = {},
     onSettingsClick: () -> Unit = {},
-    onEditProfile: () -> Unit = {}
+    onEditProfile: () -> Unit = {},
+    onAlbumSelected: (Int) -> Unit = {},
+    onReviewSelected: (Int) -> Unit = {}
 ) {
-    val state by viewModel.uiState.collectAsState()
-
-    LaunchedEffect(
-        state.navigateBack,
-        state.navigateToSettings,
-        state.navigateToEditProfile,
-        state.openAlbumId,
-        state.openReview
-    ) {
-        if (state.navigateBack) {
-            onBackClick()
-            viewModel.consumeBack()
-        }
-        if (state.navigateToSettings) {
-            onSettingsClick()
-            viewModel.consumeSettings()
-        }
-        if (state.navigateToEditProfile) {
-            onEditProfile()
-            viewModel.consumeEdit()
-        }
-        state.openAlbumId?.let { albumId ->
-            state.favoriteAlbums.firstOrNull { it.id == albumId }?.let { onAlbumClick(it) }
-            viewModel.consumeOpenAlbum()
-        }
-        // Si openReview es Int? (índice) en tu VM:
-        state.openReview?.let { idx ->
-            val review = state.reviews.getOrNull(idx)
-            if (review != null) onReviewClick(review)
-            viewModel.consumeOpenReview()
-        }
-    }
-
     // Mapa de álbumes para resolver reseñas -> usa los playlists del usuario
     val albumMap = remember(user.playlists) {
         user.playlists
@@ -105,7 +74,7 @@ fun UserProfileScreen(
                         tint = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier
                             .size(28.dp)
-                            .clickable { viewModel.onBackClicked() }
+                            .clickable { onBackClick() }
                     )
                     Icon(
                         imageVector = Icons.Default.Settings,
@@ -113,7 +82,7 @@ fun UserProfileScreen(
                         tint = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier
                             .size(28.dp)
-                            .clickable { viewModel.onSettingsClicked() }
+                            .clickable { onSettingsClick() }
                     )
                 }
             },
@@ -149,7 +118,7 @@ fun UserProfileScreen(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedButton(
-                    onClick = { viewModel.onEditProfileClicked() },
+                    onClick = { onEditProfile() },
                     shape = RoundedCornerShape(50)
                 ) {
                     Text("Editar perfil", color = MaterialTheme.colorScheme.onPrimaryContainer)
@@ -174,9 +143,7 @@ fun UserProfileScreen(
                                 modifier = Modifier
                                     .width(120.dp)
                                     .clickable {
-                                        // VM espera Int (id)
-                                        viewModel.onAlbumClicked(album.id)
-                                        onAlbumClick(album)
+                                        onAlbumSelected(album.id)
                                     },
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
@@ -225,8 +192,7 @@ fun UserProfileScreen(
                                 review = review,
                                 album = album,
                                 onClick = {
-                                    viewModel.onReviewClicked(idx) // VM: Int
-                                    onReviewClick(review)          // UI: ReviewInfo
+                                    onReviewSelected(idx)
                                 }
                             )
                         }
@@ -300,5 +266,83 @@ private fun ReviewItem(review: ReviewInfo, album: AlbumInfo, onClick: () -> Unit
                 fontWeight = FontWeight.Bold
             )
         }
+    }
+}
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+private fun UserProfileScreenPreview() {
+    val sampleArtist = ArtistInfo(
+        id = 1,
+        name = "Luna Nova",
+        profileImageUrl = "https://placehold.co/300x300",
+        genre = "Indie"
+    )
+    val sampleAlbums = listOf(
+        AlbumInfo(
+            id = 101,
+            title = "Noches Eléctricas",
+            year = "2023",
+            coverUrl = "https://placehold.co/200x200",
+            artist = sampleArtist
+        ),
+        AlbumInfo(
+            id = 102,
+            title = "Horizontes",
+            year = "2022",
+            coverUrl = "https://placehold.co/200x200/ff6",
+            artist = sampleArtist
+        )
+    )
+    val samplePlaylists = listOf(
+        PlaylistInfo(
+            id = 1,
+            title = "Favoritos recientes",
+            description = "Una mezcla de descubrimientos",
+            albums = sampleAlbums
+        )
+    )
+    val sampleUser = UserInfo(
+        id = "user123",
+        username = "CritiLover",
+        profileImageUrl = "https://placehold.co/120x120",
+        bio = "Fan de los sintetizadores y las reseñas extensas.",
+        followers = 128,
+        following = 87,
+        playlists = samplePlaylists
+    )
+    val sampleReviews = listOf(
+        ReviewInfo(
+            id = "review1",
+            content = "Una producción impecable con letras profundas.",
+            score = 8,
+            isLowScore = false,
+            albumId = sampleAlbums[0].id.toString(),
+            userId = sampleUser.id,
+            createdAt = "2024-01-01",
+            updatedAt = "2024-01-01"
+        ),
+        ReviewInfo(
+            id = "review2",
+            content = "Ritmos contagiosos ideales para bailar.",
+            score = 9,
+            isLowScore = false,
+            albumId = sampleAlbums[1].id.toString(),
+            userId = sampleUser.id,
+            createdAt = "2024-02-14",
+            updatedAt = "2024-02-14"
+        )
+    )
+    val sampleState = UserProfileState(
+        user = sampleUser,
+        reviews = sampleReviews,
+        favoriteAlbums = sampleAlbums
+    )
+
+    Proyecto_movilTheme {
+        UserProfileScreen(
+            state = sampleState,
+            user = sampleUser
+        )
     }
 }

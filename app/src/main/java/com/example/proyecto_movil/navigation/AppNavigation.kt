@@ -135,20 +135,53 @@ fun AppNavHost(
             LaunchedEffect(uid) { if (uid.isNotBlank()) vm.setInitialData(uid) }
             val state = vm.uiState.collectAsState().value
 
+            LaunchedEffect(state.navigateBack) {
+                if (state.navigateBack) {
+                    navController.navigateUp()
+                    vm.consumeBack()
+                }
+            }
+            LaunchedEffect(state.navigateToSettings) {
+                if (state.navigateToSettings) {
+                    navController.navigate(Screen.Settings.route)
+                    vm.consumeSettings()
+                }
+            }
+            LaunchedEffect(state.navigateToEditProfile) {
+                if (state.navigateToEditProfile) {
+                    navController.navigate(Screen.EditProfile.route)
+                    vm.consumeEdit()
+                }
+            }
+            LaunchedEffect(state.openAlbumId) {
+                val albumId = state.openAlbumId
+                if (albumId != null) {
+                    val album = state.favoriteAlbums.firstOrNull { it.id == albumId }
+                    if (album != null) {
+                        navController.navigate(Screen.Album.createRoute(album.id))
+                    }
+                    vm.consumeOpenAlbum()
+                }
+            }
+            LaunchedEffect(state.openReview) {
+                val reviewIndex = state.openReview
+                if (reviewIndex != null) {
+                    // TODO: navegar a detalle de reseña cuando exista pantalla
+                    vm.consumeOpenReview()
+                }
+            }
+
             when {
                 state.isLoading -> SimpleLoading()
                 state.user != null -> {
                     UserProfileScreen(
-                        viewModel = vm,
+                        state = state,
                         user = state.user,
-                        reviews = state.reviews,
-                        onBackClick = { navController.navigateUp() },
-                        onAlbumClick = { album ->
-                            navController.navigate(Screen.Album.createRoute(album.id))
-                        },
-                        onReviewClick = { /* TODO */ },
-                        onSettingsClick = { navController.navigate(Screen.Settings.route) },
-                        onEditProfile = { navController.navigate(Screen.EditProfile.route) }
+                        onBackClick = vm::onBackClicked,
+                        onSettingsClick = vm::onSettingsClicked,
+                        onEditProfile = vm::onEditProfileClicked,
+                        onAlbumSelected = vm::onAlbumClicked,
+                        onReviewSelected = vm::onReviewClicked
                     )
                 }
                 else -> SimpleError(state.errorMessage ?: "Usuario no encontrado")
