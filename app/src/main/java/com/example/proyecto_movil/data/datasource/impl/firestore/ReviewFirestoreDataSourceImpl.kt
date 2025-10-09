@@ -131,7 +131,7 @@ class ReviewFirestoreDataSourceImpl @Inject constructor(
     }
 
     override suspend fun sendOrDeleteLike(reviewId: String, liked: Boolean) {
-        // Likes aún no están soportados en esta capa. Método sin efectos para evitar crashes.
+        
     }
 
     private fun DocumentSnapshot.toReviewDtoOrNull(): ReviewDto? {
