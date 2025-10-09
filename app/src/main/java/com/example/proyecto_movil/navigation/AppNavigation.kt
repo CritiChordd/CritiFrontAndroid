@@ -1,5 +1,6 @@
 package com.example.proyecto_movil.navigation
 
+import android.net.Uri
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
@@ -40,7 +41,9 @@ import com.example.proyecto_movil.ui.Screens.EditProfile.EditarPerfilScreen
 import com.example.proyecto_movil.ui.Screens.EditProfile.EditProfileViewModel
 import com.example.proyecto_movil.ui.Screens.AlbumReviews.AlbumReviewScreen
 import com.example.proyecto_movil.ui.Screens.AlbumReviews.AlbumReviewViewModel
+import com.example.proyecto_movil.ui.Screens.ReviewDetail.ReviewDetailViewModel
 import com.example.proyecto_movil.ui.theme.Proyecto_movilTheme
+import com.example.proyecto_movil.ui.utils.ReviewDetailScreen
 import com.google.firebase.auth.FirebaseAuth
 
 @Composable
@@ -168,10 +171,10 @@ fun AppNavHost(
                     vm.consumeOpenAlbum()
                 }
             }
-            LaunchedEffect(state.openReview) {
-                val reviewIndex = state.openReview
-                if (reviewIndex != null) {
-                    // TODO: navegar a detalle de reseña cuando exista pantalla
+            LaunchedEffect(state.openReviewId) {
+                val reviewId = state.openReviewId
+                if (reviewId != null) {
+                    navController.navigate(Screen.ReviewDetail.createRoute(reviewId))
                     vm.consumeOpenReview()
                 }
             }
@@ -224,6 +227,54 @@ fun AppNavHost(
                 )
             } else {
                 SimpleError("Álbum no encontrado")
+            }
+        }
+
+        /* REVIEW DETAIL */
+        composable(
+            route = Screen.ReviewDetail.route,
+            arguments = listOf(navArgument("reviewId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val encodedId = backStackEntry.arguments?.getString("reviewId") ?: return@composable
+            val reviewId = Uri.decode(encodedId)
+            val vm: ReviewDetailViewModel = hiltViewModel()
+            val state = vm.uiState.collectAsState().value
+
+            LaunchedEffect(reviewId) { vm.load(reviewId) }
+
+            when {
+                state.isLoading -> SimpleLoading()
+                state.errorMessage != null -> {
+                    LaunchedEffect(state.errorMessage) {
+                        vm.consumeError()
+                        navController.popBackStack()
+                    }
+                    SimpleError(state.errorMessage)
+                }
+                state.review != null -> {
+                    val author = state.author
+                    val album = state.album
+                    val username = author?.username?.takeIf { it.isNotBlank() }
+                        ?: author?.name
+                        ?: "Usuario"
+                    val avatarUrl = author?.profileImageUrl ?: ""
+                    val albumTitle = album?.title ?: ""
+                    val coverUrl = album?.coverUrl ?: ""
+                    val artistName = album?.artist?.name ?: ""
+                    val albumYear = album?.year ?: ""
+
+                    ReviewDetailScreen(
+                        review = state.review,
+                        username = username,
+                        userProfileUrl = avatarUrl,
+                        albumTitle = albumTitle,
+                        albumCoverUrl = coverUrl,
+                        artistName = artistName,
+                        albumYear = albumYear,
+                        onBack = { navController.popBackStack() }
+                    )
+                }
+                else -> SimpleLoading()
             }
         }
 

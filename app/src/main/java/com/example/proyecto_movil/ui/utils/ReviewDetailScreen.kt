@@ -24,7 +24,7 @@ fun ReviewDetailScreen(
     albumTitle: String = "",
     albumCoverUrl: String = "",
     artistName: String = "",
-    albumYear: Int = 0,
+    albumYear: String = "",
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -95,11 +95,13 @@ fun ReviewDetailScreen(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Text(
-                        text = "($albumYear)",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    if (albumYear.isNotBlank()) {
+                        Text(
+                            text = "($albumYear)",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
 
@@ -150,7 +152,7 @@ fun ReviewDetailScreenLightPreview() {
                 albumTitle = "Hybrid Theory",
                 albumCoverUrl = "https://placehold.co/200x200",
                 artistName = "Linkin Park",
-                albumYear = 2000,
+                albumYear = "2000",
                 onBack = {}
             )
         }

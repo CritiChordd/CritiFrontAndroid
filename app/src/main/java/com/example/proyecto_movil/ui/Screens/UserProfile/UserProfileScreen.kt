@@ -4,10 +4,12 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Settings
@@ -51,7 +53,7 @@ fun UserProfileScreen(
     onReviewProfileImageClicked: (String) -> Unit,
     onEditProfile: () -> Unit = {},
     onAlbumSelected: (Int) -> Unit = {},
-    onReviewSelected: (Int) -> Unit = {}
+    onReviewSelected: (String) -> Unit = {}
 ) {
     val isDark = isSystemInDarkTheme()
     val backgroundRes = if (isDark) R.drawable.fondocriti else R.drawable.fondocriti_light
@@ -106,9 +108,11 @@ fun UserProfileScreen(
                     color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
                     shape = RoundedCornerShape(28.dp)
                 ) {
+                    val scrollState = rememberScrollState()
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
+                            .verticalScroll(scrollState)
                             .padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
@@ -211,10 +215,10 @@ fun UserProfileScreen(
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                            state.reviewItems.forEachIndexed { idx, item ->
+                            state.reviewItems.forEach { item ->
                                 ReviewItem(
                                     item = item,
-                                    onClick = { onReviewSelected(idx) }
+                                    onClick = { onReviewSelected(item.review.id) }
                                 )
                             }
                         }
@@ -403,7 +407,7 @@ private fun UserProfileScreenPreview() {
             onSettingsClick = {},
             onEditProfile = {},
             onAlbumSelected = {},
-            onReviewSelected = {},
+            onReviewSelected = { _ -> },
             onReviewProfileImageClicked = {}
         )
     }

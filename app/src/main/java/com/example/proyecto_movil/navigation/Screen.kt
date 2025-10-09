@@ -1,5 +1,7 @@
 package com.example.proyecto_movil.navigation
 
+import android.net.Uri
+
 sealed class Screen(val route: String) {
     object Welcome : Screen("welcome")
     object Login : Screen("login")
@@ -26,4 +28,7 @@ sealed class Screen(val route: String) {
     object Settings : Screen("settings")
     object EditProfile : Screen("editProfile")
     object AddReview : Screen("addReview")
+    object ReviewDetail : Screen("reviewDetail/{reviewId}") {
+        fun createRoute(reviewId: String) = "reviewDetail/${Uri.encode(reviewId)}"
+    }
 }

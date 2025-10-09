@@ -58,6 +58,7 @@ class UserProfileViewModel @Inject constructor(
                         reviews = emptyList(),
                         reviewItems = emptyList(),
                         favoriteAlbums = emptyList(),
+                        openReviewId = null,
                         errorMessage = error.message ?: "Error cargando reseñas"
                     )
                 }
@@ -77,7 +78,8 @@ class UserProfileViewModel @Inject constructor(
                     user = user,
                     reviews = reviews,
                     reviewItems = reviewItems,
-                    favoriteAlbums = favoriteAlbums
+                    favoriteAlbums = favoriteAlbums,
+                    openReviewId = null
                 )
             }
         }
@@ -126,6 +128,6 @@ class UserProfileViewModel @Inject constructor(
     fun onAlbumClicked(id: Int)       = _uiState.update { it.copy(openAlbumId = id) }
     fun consumeOpenAlbum()            = _uiState.update { it.copy(openAlbumId = null) }
 
-    fun onReviewClicked(id: Int)      = _uiState.update { it.copy(openReview = id) }
-    fun consumeOpenReview()           = _uiState.update { it.copy(openReview = null) }
+    fun onReviewClicked(id: String)   = _uiState.update { it.copy(openReviewId = id) }
+    fun consumeOpenReview()           = _uiState.update { it.copy(openReviewId = null) }
 }

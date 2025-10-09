@@ -17,7 +17,7 @@ data class UserProfileState(
     val navigateToSettings: Boolean = false,
     val navigateToEditProfile: Boolean = false,
     val openAlbumId: Int? = null,
-    val openReview: Int? = null
+    val openReviewId: String? = null
 )
 
 data class UserReviewUi(
