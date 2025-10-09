@@ -14,7 +14,7 @@ class AlbumRetrofitDataSourceImpl @Inject constructor(
         return service.getAllAlbums().map { it.toAlbumInfo() }
     }
 
-    override suspend fun getAlbumById(id: String): AlbumInfo {
+    override suspend fun getAlbumById(id: Int): AlbumInfo {
         return service.getAlbumById(id).toAlbumInfo()
     }
 }

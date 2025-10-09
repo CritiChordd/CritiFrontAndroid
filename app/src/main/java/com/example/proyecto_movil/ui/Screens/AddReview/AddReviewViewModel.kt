@@ -4,20 +4,24 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.proyecto_movil.data.AlbumInfo
-import com.example.proyecto_movil.data.repository.ReviewRepository
 import com.example.proyecto_movil.data.repository.AlbumRepository
+import com.example.proyecto_movil.data.repository.ReviewRepository
+import com.example.proyecto_movil.data.repository.UserRepository
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlin.math.roundToInt
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import retrofit2.HttpException
 
 @HiltViewModel
 class AddReviewViewModel @Inject constructor(
     private val reviewRepository: ReviewRepository,
     private val albumRepository: AlbumRepository,
+    private val userRepository: UserRepository,
     private val auth: FirebaseAuth
 ) : ViewModel() {
 
@@ -26,6 +30,7 @@ class AddReviewViewModel @Inject constructor(
 
     init {
         loadAlbums()
+        loadCurrentUser()
     }
 
     /* ---------- Navegación ---------- */
@@ -50,6 +55,16 @@ class AddReviewViewModel @Inject constructor(
                 it.copy(
                     showMessage = true,
                     errorMessage = "Debes iniciar sesión para publicar reseñas"
+                )
+            }
+            return
+        }
+
+        val backendUserId = s.backendUserId?.takeIf { it.isNotBlank() } ?: run {
+            _uiState.update {
+                it.copy(
+                    showMessage = true,
+                    errorMessage = "Tu cuenta aún no está sincronizada con el backend. Intenta actualizar tu perfil e inténtalo de nuevo."
                 )
             }
             return
@@ -84,11 +99,12 @@ class AddReviewViewModel @Inject constructor(
         // 🚀 Enviar al backend
         viewModelScope.launch {
             try {
+                val normalizedScore = (s.scorePercent / 10.0).roundToInt()
                 val result = reviewRepository.createReview(
                     content = s.reviewText,
-                    score = s.scorePercent,
+                    score = normalizedScore,
                     albumId = s.albumId!!.toString(),
-                    userId = currentUserId
+                    userId = backendUserId
                 )
 
                 if (result.isSuccess) {
@@ -104,11 +120,22 @@ class AddReviewViewModel @Inject constructor(
                     }
                 }
             } catch (e: Exception) {
-                Log.e("AddReviewVM", "⚠️ Error de red o servidor", e)
+                val logMessage = if (e is HttpException) {
+                    val errorBody = e.response()?.errorBody()?.string()
+                    "⚠️ Error HTTP ${e.code()} ${e.message()} -> $errorBody"
+                } else {
+                    "⚠️ Error de red o servidor"
+                }
+                Log.e("AddReviewVM", logMessage, e)
+                val uiError = if (e is HttpException && e.code() == 400) {
+                    "El servidor rechazó la reseña. Verifica los datos e inténtalo nuevamente."
+                } else {
+                    e.message ?: "No se pudo publicar la reseña"
+                }
                 _uiState.update {
                     it.copy(
                         showMessage = true,
-                        errorMessage = "Error de red o servidor: ${e.message}"
+                        errorMessage = uiError
                     )
                 }
             }
@@ -191,6 +218,33 @@ class AddReviewViewModel @Inject constructor(
                         showMessage = true,
                         errorMessage = "No se pudieron cargar los álbumes disponibles"
                     )
+                }
+            }
+        }
+    }
+
+    private fun loadCurrentUser() {
+        val uid = auth.currentUser?.uid ?: run {
+            Log.w("AddReviewVM", "No authenticated Firebase user to resolve backend ID")
+            return
+        }
+
+        viewModelScope.launch {
+            val result = userRepository.getUserById(uid)
+            result.onSuccess { user ->
+                _uiState.update { state ->
+                    state.copy(backendUserId = user.backendUserId)
+                }
+                if (user.backendUserId.isNullOrBlank()) {
+                    Log.w(
+                        "AddReviewVM",
+                        "Usuario ${user.id} no tiene backendUserId; se requerirá para publicar reseñas"
+                    )
+                }
+            }.onFailure {
+                Log.e("AddReviewVM", "Error obteniendo el usuario para reseñas", it)
+                _uiState.update { state ->
+                    state.copy(backendUserId = null)
                 }
             }
         }

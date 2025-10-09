@@ -4,9 +4,6 @@ import com.example.proyecto_movil.data.dtos.CreateReviewDto
 import com.example.proyecto_movil.data.dtos.ReviewDto
 import retrofit2.http.*
 
-/**
- * Endpoints para acceder a reseñas en el backend.
- */
 interface ReviewRetrofitService {
 
     @GET("reviews")
@@ -18,6 +15,9 @@ interface ReviewRetrofitService {
     @GET("reviews/user/{userId}")
     suspend fun getReviewsByUserId(@Path("userId") userId: String): List<ReviewDto>
 
+
+    @GET("reviews/album/{albumId}")
+    suspend fun getReviewsByAlbumId(@Path("albumId") albumId: String): List<ReviewDto>
 
     @POST("reviews")
     suspend fun createReview(@Body review: CreateReviewDto)

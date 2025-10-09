@@ -12,6 +12,7 @@ import androidx.compose.ui.unit.dp
 import com.example.proyecto_movil.R
 import com.example.proyecto_movil.data.AlbumInfo
 import com.example.proyecto_movil.ui.utils.ScreenBackground
+import kotlin.math.roundToInt
 
 @Composable
 fun AddReviewScreen(
@@ -52,7 +53,10 @@ fun AddReviewScreen(
 
             // Slider para puntaje
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("Puntaje: ${state.scorePercent}%")
+                val scoreOutOfTen = remember(state.scorePercent) {
+                    (state.scorePercent / 10.0).roundToInt()
+                }
+                Text("Puntaje: ${state.scorePercent}% (${scoreOutOfTen}/10)")
                 Slider(
                     value = state.scorePercent.toFloat(),
                     onValueChange = { viewModel.updateScore(it.toInt()) },

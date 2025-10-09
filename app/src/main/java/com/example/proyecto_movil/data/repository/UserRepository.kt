@@ -17,7 +17,8 @@ class UserRepository(
         username: String,
         email: String,
         bio: String = "",
-        profilePic: String = ""            // ← no-null para evitar error al llamar
+        profilePic: String = "",
+        name: String? = null
     ): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             // (Opcional) crear en API
@@ -29,7 +30,8 @@ class UserRepository(
                 username = username,
                 email = email,
                 bio = bio,
-                profilePic = profilePic.ifBlank { "" }
+                profilePic = profilePic.ifBlank { "" },
+                name = name
             )
             Result.success(Unit)
         } catch (e: Throwable) {

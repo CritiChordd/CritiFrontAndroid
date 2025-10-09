@@ -15,6 +15,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.proyecto_movil.R
 import com.example.proyecto_movil.data.AlbumInfo
@@ -25,10 +27,10 @@ import com.example.proyecto_movil.ui.utils.*
 @Composable
 fun AlbumReviewScreen(
     album: AlbumInfo,
-    viewModel: AlbumReviewViewModel,
+    viewModel: AlbumReviewViewModel = hiltViewModel(),
     modifier: Modifier = Modifier,
     onArtistClick: () -> Unit = {},
-    onUserClick: (String) -> Unit = {}
+    onUserClick: (Int) -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsState()
 
@@ -114,7 +116,7 @@ fun AlbumReviewScreen(
                 items(state.reviews) { review ->
                     ReviewCard(
                         review = review,
-                        onUserClick = { userId -> viewModel.onUserClicked(userId) }
+                        onUserClick = { userId -> viewModel.onUserClicked(userId.toInt()) }
                     )
                 }
             }

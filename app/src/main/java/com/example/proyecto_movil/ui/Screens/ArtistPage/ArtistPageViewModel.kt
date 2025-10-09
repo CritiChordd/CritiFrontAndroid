@@ -63,7 +63,7 @@ class ArtistPageViewModel @Inject constructor(
                 val allReviews: List<ReviewInfo> = emptyList()
 
                 val artistReviews = allReviews.filter { review ->
-                    albums.any { it.id.toString() == review.albumId }
+                    albums.any { it.id == review.albumId }
                 }
 
                 val reviewsCount = artistReviews.size
