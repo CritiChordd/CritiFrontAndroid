@@ -20,6 +20,7 @@ data class UserProfileDto(
 fun UserProfileDto.toUserUI(): UserInfo {
     return UserInfo(
         id = id,                          // ← String
+        name = username,
         username = username,
         profileImageUrl = profile_pic,
         bio = bio,

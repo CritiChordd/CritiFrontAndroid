@@ -90,6 +90,10 @@ class UserFirestoreDataSourceImpl(
             ?: this["profileImageURL"]
             ?: this["profile_pic"]
 
+        val resolvedName = this["name"]?.toString()
+            ?.takeIf { it.isNotBlank() }
+            ?: resolvedUsername
+
         fun Any?.asBackendId(): String? = when (this) {
             is Number -> this.toLong().toString()
             is String -> this.takeIf { it.isNotBlank() }
@@ -102,6 +106,7 @@ class UserFirestoreDataSourceImpl(
 
         return UserInfo(
             id = this["id"]?.toString() ?: defaultId,
+            name = resolvedName,
             username = resolvedUsername,
             profileImageUrl = resolvedAvatar?.toString().orEmpty(),
             bio = this["bio"]?.toString().orEmpty(),
