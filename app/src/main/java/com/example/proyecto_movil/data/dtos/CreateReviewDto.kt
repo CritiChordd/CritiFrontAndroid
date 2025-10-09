@@ -1,9 +1,9 @@
 package com.example.proyecto_movil.data.dtos
 
 data class CreateReviewUserDto(
-   val id: String,
-   val username: String,
-   val profile_pic: String,
+    val name: String? = null,
+   val username: String? = null,
+   val profile_pic: String? = null
 )
 
 

@@ -2,14 +2,20 @@ package com.example.proyecto_movil.data.repository
 
 import coil.network.HttpException
 import com.example.proyecto_movil.data.ReviewInfo
+import com.example.proyecto_movil.data.datasource.AuthRemoteDataSource
+import com.example.proyecto_movil.data.datasource.impl.firestore.UserFirestoreDataSourceImpl
 import com.example.proyecto_movil.data.datasource.impl.retrofit.ReviewRetrofitDataSourceImplement
 import com.example.proyecto_movil.data.dtos.CreateReviewDto
+import com.example.proyecto_movil.data.dtos.CreateReviewUserDto
 import com.example.proyecto_movil.data.dtos.toReviewInfo
 
 import javax.inject.Inject
 
 class ReviewRepository @Inject constructor(
-    private val reviewRemoteDataSource: ReviewRetrofitDataSourceImplement)
+    private val reviewRemoteDataSource: ReviewRetrofitDataSourceImplement,
+    private val userRemoteDataSource: UserFirestoreDataSourceImpl,
+    private val authRemoteDataSource: AuthRemoteDataSource
+    )
 {
     suspend fun getReviewsByUserId(userId: String): Result<List<ReviewInfo>> {
         return try {
