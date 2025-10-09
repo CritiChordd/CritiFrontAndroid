@@ -187,7 +187,11 @@ fun AppNavHost(
                         onEditProfile = vm::onEditProfileClicked,
                         onAlbumSelected = vm::onAlbumClicked,
                         onReviewSelected = vm::onReviewClicked,
-                        onReviewProfileImageClicked = TODO(),
+                        onReviewProfileImageClicked = { targetUid ->
+                            if (targetUid.isNotBlank() && targetUid != uid) {
+                                navController.navigate(Screen.Profile.createRoute(targetUid))
+                            }
+                        },
                     )
                 }
                 else -> SimpleError(state.errorMessage ?: "Usuario no encontrado")
