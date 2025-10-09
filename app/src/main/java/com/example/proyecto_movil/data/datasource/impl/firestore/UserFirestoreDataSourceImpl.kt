@@ -15,40 +15,25 @@ class UserFirestoreDataSourceImpl(
 
         val data = snap.data.orEmpty()
 
-        val resolvedUsername = sequenceOf(
-            data["username"],
-            data["name"],
-            data["displayName"],
-            data["email"]
-        )
-            .mapNotNull { it?.toString() }
-            .firstOrNull { it.isNotBlank() }
-            .orEmpty()
+        return data.toUserInfo(defaultId = id)
+    }
 
-        val resolvedAvatar = data["profileImageUrl"]
-            ?: data["profileImageURL"]
-            ?: data["profile_pic"]
+    suspend fun searchUsersByName(query: String, limit: Long = 10): List<UserInfo> {
+        if (query.isBlank()) return emptyList()
 
-        fun Any?.asBackendId(): String? = when (this) {
-            is Number -> this.toLong().toString()
-            is String -> this.takeIf { it.isNotBlank() }
-            else -> null
+        val normalized = query.trim().lowercase()
+
+        val snapshot = collection
+            .orderBy("usernameLowercase")
+            .startAt(normalized)
+            .endAt(normalized + "\uf8ff")
+            .limit(limit)
+            .get()
+            .await()
+
+        return snapshot.documents.mapNotNull { doc ->
+            doc.data?.toUserInfo(defaultId = doc.id)
         }
-
-        val backendId = data["backendUserId"].asBackendId()
-            ?: data["apiUserId"].asBackendId()
-            ?: data["numericId"].asBackendId()
-
-        return UserInfo(
-            id = data["id"]?.toString() ?: id,                         // ← String
-            username = resolvedUsername,
-            profileImageUrl = resolvedAvatar?.toString().orEmpty(),
-            bio = data["bio"]?.toString().orEmpty(),
-            followers = (data["followers"] as? Number)?.toInt() ?: 0,
-            following = (data["following"] as? Number)?.toInt() ?: 0,
-            playlists = emptyList(),
-            backendUserId = backendId
-        )
     }
 
     suspend fun createOrUpdateUser(
@@ -66,6 +51,7 @@ class UserFirestoreDataSourceImpl(
             "bio" to bio,
             "profileImageUrl" to (profilePic ?: ""),
             "name" to (name ?: ""),
+            "usernameLowercase" to username.lowercase(),
             "followers" to 0,
             "following" to 0
         )
@@ -83,8 +69,46 @@ class UserFirestoreDataSourceImpl(
             "bio" to bio
         )
         if (profilePic != null) updates["profileImageUrl"] = profilePic
+        updates["usernameLowercase"] = username.lowercase()
 
         collection.document(id).update(updates).await()
         return getUserById(id)
+    }
+
+    private fun Map<String, Any?>.toUserInfo(defaultId: String): UserInfo {
+        val resolvedUsername = sequenceOf(
+            this["username"],
+            this["name"],
+            this["displayName"],
+            this["email"]
+        )
+            .mapNotNull { it?.toString() }
+            .firstOrNull { it.isNotBlank() }
+            .orEmpty()
+
+        val resolvedAvatar = this["profileImageUrl"]
+            ?: this["profileImageURL"]
+            ?: this["profile_pic"]
+
+        fun Any?.asBackendId(): String? = when (this) {
+            is Number -> this.toLong().toString()
+            is String -> this.takeIf { it.isNotBlank() }
+            else -> null
+        }
+
+        val backendId = this["backendUserId"].asBackendId()
+            ?: this["apiUserId"].asBackendId()
+            ?: this["numericId"].asBackendId()
+
+        return UserInfo(
+            id = this["id"]?.toString() ?: defaultId,
+            username = resolvedUsername,
+            profileImageUrl = resolvedAvatar?.toString().orEmpty(),
+            bio = this["bio"]?.toString().orEmpty(),
+            followers = (this["followers"] as? Number)?.toInt() ?: 0,
+            following = (this["following"] as? Number)?.toInt() ?: 0,
+            playlists = emptyList(),
+            backendUserId = backendId
+        )
     }
 }

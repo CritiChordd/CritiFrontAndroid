@@ -6,6 +6,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -22,7 +23,7 @@ import com.example.proyecto_movil.ui.theme.Proyecto_movilTheme
 fun ReviewCard(
     review: ReviewInfo,
     modifier: Modifier = Modifier,
-    onUserClick: (Int) -> Unit = {} // ✅ userId ahora es Int
+    onUserClick: (String) -> Unit = {}
 ) {
     Card(
         shape = RoundedCornerShape(12.dp),
@@ -36,18 +37,23 @@ fun ReviewCard(
 
             // ---------- Usuario ----------
             Row(verticalAlignment = Alignment.CenterVertically) {
+                val resolvedUserId = remember(review.userId, review.firebaseUserId) {
+                    review.userId.ifBlank { review.firebaseUserId.orEmpty() }
+                }
                 AsyncImage(
                     model = "https://placehold.co/100x100", // ⚠️ reemplaza si tienes user.profilePic
-                    contentDescription = "Usuario ${review.userId}",
+                    contentDescription = if (resolvedUserId.isNotBlank()) "Usuario $resolvedUserId" else null,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .size(40.dp)
                         .clip(CircleShape)
-                        .clickable { onUserClick(review.userId) }
+                        .clickable(enabled = resolvedUserId.isNotBlank()) {
+                            onUserClick(resolvedUserId)
+                        }
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    text = "Usuario ${review.userId}", // ✅ convertir Int a String
+                    text = if (resolvedUserId.isNotBlank()) "Usuario $resolvedUserId" else "Usuario desconocido",
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -70,7 +76,7 @@ fun ReviewCard(
                 Spacer(Modifier.width(12.dp))
                 Column {
                     Text(
-                        text = "Álbum ${review.albumId}", // ✅ convertir Int a texto
+                    text = "Álbum ${review.albumId}",
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )

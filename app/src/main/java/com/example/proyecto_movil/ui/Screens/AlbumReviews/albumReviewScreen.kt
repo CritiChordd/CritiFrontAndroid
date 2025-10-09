@@ -30,7 +30,7 @@ fun AlbumReviewScreen(
     viewModel: AlbumReviewViewModel = hiltViewModel(),
     modifier: Modifier = Modifier,
     onArtistClick: () -> Unit = {},
-    onUserClick: (Int) -> Unit = {}
+    onUserClick: (String) -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsState()
 
@@ -116,7 +116,7 @@ fun AlbumReviewScreen(
                 items(state.reviews) { review ->
                     ReviewCard(
                         review = review,
-                        onUserClick = { userId -> viewModel.onUserClicked(userId.toInt()) }
+                        onUserClick = viewModel::onUserClicked
                     )
                 }
             }

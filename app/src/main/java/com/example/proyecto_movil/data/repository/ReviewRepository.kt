@@ -35,14 +35,22 @@ class ReviewRepository @Inject constructor(
 
 
     suspend fun createReview(
-        content: String, score: Int, albumId: Int, userId: Int
+        content: String,
+        score: Int,
+        albumId: Int,
+        userId: String?,
+        firebaseUserId: String
     ): Result<Unit> = try {
+        val now = System.currentTimeMillis().toString()
         val dto = CreateReviewDto(
             content = content,
             score = score,
             is_low_score = score < 5,
-            album_id = albumId,
-            user_id = userId
+            album_id = albumId.toString(),
+            user_id = userId ?: "",
+            firebase_user_id = firebaseUserId,
+            createdAt = now,
+            updatedAt = now
         )
         reviewRemoteDataSource.createReview(dto)
         Result.success(Unit)

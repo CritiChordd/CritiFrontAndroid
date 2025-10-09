@@ -60,14 +60,12 @@ class AddReviewViewModel @Inject constructor(
             return
         }
 
-        val backendUserId = s.backendUserId?.takeIf { it.isNotBlank() } ?: run {
-            _uiState.update {
-                it.copy(
-                    showMessage = true,
-                    errorMessage = "Tu cuenta aún no está sincronizada con el backend. Intenta actualizar tu perfil e inténtalo de nuevo."
-                )
-            }
-            return
+        val backendUserId = s.backendUserId?.takeIf { it.isNotBlank() }
+        if (backendUserId == null) {
+            Log.w(
+                "AddReviewVM",
+                "Publicando reseña sin backendUserId; se usará únicamente el uid de Firebase"
+            )
         }
 
         // 🧩 Validaciones
@@ -103,8 +101,9 @@ class AddReviewViewModel @Inject constructor(
                 val result = reviewRepository.createReview(
                     content = s.reviewText,
                     score = normalizedScore,
-                    albumId = s.albumId!!.toString(),
-                    userId = backendUserId
+                    albumId = s.albumId!!,
+                    userId = backendUserId,
+                    firebaseUserId = currentUserId
                 )
 
                 if (result.isSuccess) {

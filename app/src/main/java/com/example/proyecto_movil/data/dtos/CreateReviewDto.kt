@@ -12,5 +12,8 @@ data class CreateReviewDto(
     val score: Int,
     val is_low_score: Boolean,
     val album_id: String,
-    val user_id: String,
+    val user_id: String = "",
+    val firebase_user_id: String = "",
+    val createdAt: String = "",
+    val updatedAt: String = ""
 )
