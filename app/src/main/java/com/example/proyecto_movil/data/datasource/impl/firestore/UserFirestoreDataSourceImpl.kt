@@ -29,9 +29,15 @@ class UserFirestoreDataSourceImpl(
             ?: data["profileImageURL"]
             ?: data["profile_pic"]
 
-        val backendId = (data["backendUserId"] as? Number)
-            ?: (data["apiUserId"] as? Number)
-            ?: (data["numericId"] as? Number)
+        fun Any?.asBackendId(): String? = when (this) {
+            is Number -> this.toLong().toString()
+            is String -> this.takeIf { it.isNotBlank() }
+            else -> null
+        }
+
+        val backendId = data["backendUserId"].asBackendId()
+            ?: data["apiUserId"].asBackendId()
+            ?: data["numericId"].asBackendId()
 
         return UserInfo(
             id = data["id"]?.toString() ?: id,                         // ← String
@@ -41,7 +47,7 @@ class UserFirestoreDataSourceImpl(
             followers = (data["followers"] as? Number)?.toInt() ?: 0,
             following = (data["following"] as? Number)?.toInt() ?: 0,
             playlists = emptyList(),
-            backendUserId = backendId?.toInt()
+            backendUserId = backendId
         )
     }
 

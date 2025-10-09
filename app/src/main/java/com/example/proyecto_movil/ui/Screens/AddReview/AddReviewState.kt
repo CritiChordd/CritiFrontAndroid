@@ -15,7 +15,7 @@ data class AddReviewState(
     val showMessage: Boolean = false,
     val errorMessage: String = "",
     val availableAlbums: List<AlbumInfo> = emptyList(),
-    val backendUserId: Int? = null,
+    val backendUserId: String? = null,
     val navigateCancel: Boolean = false,
     val navigatePublished: Boolean = false,
     val navigateToSettings: Boolean = false

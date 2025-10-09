@@ -60,8 +60,7 @@ class AddReviewViewModel @Inject constructor(
             return
         }
 
-        val backendUserId = s.backendUserId
-        if (backendUserId == null) {
+        val backendUserId = s.backendUserId?.takeIf { it.isNotBlank() } ?: run {
             _uiState.update {
                 it.copy(
                     showMessage = true,
@@ -104,7 +103,7 @@ class AddReviewViewModel @Inject constructor(
                 val result = reviewRepository.createReview(
                     content = s.reviewText,
                     score = normalizedScore,
-                    albumId = s.albumId!!,
+                    albumId = s.albumId!!.toString(),
                     userId = backendUserId
                 )
 
@@ -128,10 +127,15 @@ class AddReviewViewModel @Inject constructor(
                     "⚠️ Error de red o servidor"
                 }
                 Log.e("AddReviewVM", logMessage, e)
+                val uiError = if (e is HttpException && e.code() == 400) {
+                    "El servidor rechazó la reseña. Verifica los datos e inténtalo nuevamente."
+                } else {
+                    e.message ?: "No se pudo publicar la reseña"
+                }
                 _uiState.update {
                     it.copy(
                         showMessage = true,
-                        errorMessage = e.message ?: "No se pudo publicar la reseña"
+                        errorMessage = uiError
                     )
                 }
             }
@@ -231,7 +235,7 @@ class AddReviewViewModel @Inject constructor(
                 _uiState.update { state ->
                     state.copy(backendUserId = user.backendUserId)
                 }
-                if (user.backendUserId == null) {
+                if (user.backendUserId.isNullOrBlank()) {
                     Log.w(
                         "AddReviewVM",
                         "Usuario ${user.id} no tiene backendUserId; se requerirá para publicar reseñas"
