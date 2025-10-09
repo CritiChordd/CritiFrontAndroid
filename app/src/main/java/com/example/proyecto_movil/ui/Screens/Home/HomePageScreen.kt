@@ -257,7 +257,10 @@ private fun SectionRow(
             contentPadding = PaddingValues(horizontal = 8.dp)
         ) {
             items(albums) { album ->
-                AlbumCard(album = album) { onAlbumClick(album) }
+                AlbumCard(
+                    album = album,
+                    onClick = { onAlbumClick(album) }
+                )
             }
         }
     }
