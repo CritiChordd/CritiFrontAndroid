@@ -16,7 +16,6 @@ import com.example.proyecto_movil.ui.utils.ScreenBackground
 @Composable
 fun AddReviewScreen(
     viewModel: AddReviewViewModel,
-    albumList: List<AlbumInfo>,
     onCancel: () -> Unit,
     onPublished: (AlbumInfo, String, Int, Boolean) -> Unit
 ) {
@@ -24,6 +23,7 @@ fun AddReviewScreen(
     val isDark = isSystemInDarkTheme()
     val backgroundRes = if (isDark) R.drawable.fondocriti else R.drawable.fondocriti_light
     val scrollState = rememberScrollState()
+    val albums = state.availableAlbums
 
     ScreenBackground(backgroundRes = backgroundRes) {
         Column(
@@ -36,9 +36,10 @@ fun AddReviewScreen(
 
             // Dropdown para seleccionar álbum
             AlbumDropdown(
-                albums = albumList,
+                albums = albums,
                 selectedTitle = state.albumTitle,
-                onAlbumSelected = { album -> viewModel.updateAlbum(album) }
+                onAlbumSelected = { album -> viewModel.updateAlbum(album) },
+                enabled = albums.isNotEmpty()
             )
 
             // Campo de texto para la reseña
@@ -86,7 +87,10 @@ fun AddReviewScreen(
                 OutlinedButton(onClick = { viewModel.onCancelClicked() }) {
                     Text("Cancelar")
                 }
-                Button(onClick = { viewModel.onPublishClicked() }) {
+                Button(
+                    onClick = { viewModel.onPublishClicked() },
+                    enabled = state.albumId != null
+                ) {
                     Text("Publicar")
                 }
             }
@@ -104,7 +108,7 @@ fun AddReviewScreen(
     // Navegación al publicar
     LaunchedEffect(state.navigatePublished) {
         if (state.navigatePublished) {
-            val selectedAlbum = albumList.find { it.title == state.albumTitle }
+            val selectedAlbum = albums.firstOrNull { it.id == state.albumId }
             if (selectedAlbum != null) {
                 onPublished(selectedAlbum, state.reviewText, state.scorePercent, state.liked)
             }
@@ -118,16 +122,25 @@ fun AddReviewScreen(
 fun AlbumDropdown(
     albums: List<AlbumInfo>,
     selectedTitle: String,
-    onAlbumSelected: (AlbumInfo) -> Unit
+    onAlbumSelected: (AlbumInfo) -> Unit,
+    enabled: Boolean = true
 ) {
     var expanded by remember { mutableStateOf(false) }
 
     Column {
-        OutlinedButton(onClick = { expanded = true }) {
-            Text(selectedTitle.ifBlank { "Selecciona un álbum" })
+        OutlinedButton(
+            onClick = { expanded = true },
+            enabled = enabled
+        ) {
+            val placeholder = when {
+                !enabled -> "Cargando álbumes..."
+                selectedTitle.isBlank() -> "Selecciona un álbum"
+                else -> selectedTitle
+            }
+            Text(placeholder)
         }
         DropdownMenu(
-            expanded = expanded,
+            expanded = expanded && enabled,
             onDismissRequest = { expanded = false }
         ) {
             albums.forEach { album ->

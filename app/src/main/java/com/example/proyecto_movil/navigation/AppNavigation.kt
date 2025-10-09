@@ -39,6 +39,7 @@ import com.example.proyecto_movil.ui.Screens.AddReview.AddReviewViewModel
 import com.example.proyecto_movil.ui.Screens.EditProfile.EditarPerfilScreen
 import com.example.proyecto_movil.ui.Screens.EditProfile.EditProfileViewModel
 import com.example.proyecto_movil.ui.Screens.AlbumReviews.AlbumReviewScreen
+import com.example.proyecto_movil.ui.Screens.AlbumReviews.AlbumReviewViewModel
 import com.example.proyecto_movil.ui.theme.Proyecto_movilTheme
 import com.google.firebase.auth.FirebaseAuth
 
@@ -195,6 +196,7 @@ fun AppNavHost(
         ) { backStackEntry ->
             val albumId = backStackEntry.arguments?.getInt("albumId")
             val vm: ContentViewModel = hiltViewModel()
+            val albumReviewVm: AlbumReviewViewModel = hiltViewModel()
 
             LaunchedEffect(albumId) { vm.setInitial(artistId = null, isOwner = false) }
             val state = vm.uiState.collectAsState().value
@@ -203,13 +205,12 @@ fun AppNavHost(
             if (selectedAlbum != null) {
                 AlbumReviewScreen(
                     album = selectedAlbum,
+                    viewModel = albumReviewVm,
                     onArtistClick = {
                         navController.navigate(Screen.ContentArtist.createRoute(selectedAlbum.artist.id))
                     },
-                    onUserClick = { anyUid ->
-                        // Si viene Int, toString(); si ya es String, úsalo.
-                        val uidString = anyUid.toString()
-                        navController.navigate(Screen.Profile.createRoute(uidString))
+                    onUserClick = { userId ->
+                        navController.navigate(Screen.Profile.createRoute(userId))
                     }
                 )
             } else {
@@ -280,7 +281,6 @@ fun AppNavHost(
             val vm: AddReviewViewModel = hiltViewModel()
             AddReviewScreen(
                 viewModel = vm,
-                albumList = emptyList(),
                 onCancel = { navController.navigateUp() },
                 onPublished = { _, _, _, _ -> navController.navigateUp() }
             )

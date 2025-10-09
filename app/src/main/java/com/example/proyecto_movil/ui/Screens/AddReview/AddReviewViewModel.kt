@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.proyecto_movil.data.AlbumInfo
+import com.example.proyecto_movil.data.repository.AlbumRepository
 import com.example.proyecto_movil.data.repository.ReviewRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -14,11 +15,16 @@ import kotlinx.coroutines.launch
 
 @HiltViewModel
 class AddReviewViewModel @Inject constructor(
-    private val reviewRepository: ReviewRepository
+    private val reviewRepository: ReviewRepository,
+    private val albumRepository: AlbumRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AddReviewState())
     val uiState: StateFlow<AddReviewState> = _uiState
+
+    init {
+        loadAlbums()
+    }
 
     /* ---------- Navegación ---------- */
 
@@ -68,7 +74,7 @@ class AddReviewViewModel @Inject constructor(
                 val result = reviewRepository.createReview(
                     content = s.reviewText,
                     score = s.scorePercent,
-                    albumId = s.albumId,
+                    albumId = s.albumId!!,
                     userId = userId
                 )
 
@@ -114,10 +120,66 @@ class AddReviewViewModel @Inject constructor(
                 albumTitle = album.title,
                 albumArtist = album.artist.name,
                 albumYear = album.year,
-                albumCoverRes = album.coverUrl
+                albumCoverRes = album.coverUrl,
+                showMessage = false,
+                errorMessage = ""
             )
         }
 
     fun onSettingsClicked() =
         _uiState.update { it.copy(navigateToSettings = true) }
+
+    private fun loadAlbums() {
+        viewModelScope.launch {
+            try {
+                val albums = albumRepository.getAllAlbums().getOrElse {
+                    Log.e("AddReviewVM", "❌ Error cargando álbumes", it)
+                    emptyList()
+                }
+
+                _uiState.update { current ->
+                    when {
+                        albums.isEmpty() -> current.copy(
+                            availableAlbums = emptyList(),
+                            albumId = null,
+                            albumTitle = "",
+                            albumArtist = "",
+                            albumYear = "",
+                            albumCoverRes = "",
+                            showMessage = true,
+                            errorMessage = "No hay álbumes disponibles para reseñar todavía"
+                        )
+
+                        current.albumId != null -> current.copy(
+                            availableAlbums = albums,
+                            showMessage = false,
+                            errorMessage = ""
+                        )
+
+                        else -> {
+                            val first = albums.first()
+                            current.copy(
+                                availableAlbums = albums,
+                                albumId = first.id,
+                                albumTitle = first.title,
+                                albumArtist = first.artist.name,
+                                albumYear = first.year,
+                                albumCoverRes = first.coverUrl,
+                                showMessage = false,
+                                errorMessage = ""
+                            )
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("AddReviewVM", "⚠️ Error inesperado cargando álbumes", e)
+                _uiState.update {
+                    it.copy(
+                        showMessage = true,
+                        errorMessage = "No se pudieron cargar los álbumes disponibles"
+                    )
+                }
+            }
+        }
+    }
 }

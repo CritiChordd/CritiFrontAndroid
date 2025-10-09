@@ -1,5 +1,6 @@
 package com.example.proyecto_movil.ui.Screens.UserProfile
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -10,7 +11,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -86,128 +94,146 @@ fun UserProfileScreen(
                     )
                 }
             },
-            containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.6f)
+            containerColor = Color.Transparent,
+            contentColor = MaterialTheme.colorScheme.onBackground
         ) { padding ->
-            Column(
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // ---------- Header: usa datos de 'user' (NO del state) ----------
-                val avatar: String = user.avatarUrl.ifEmpty { "https://placehold.co/120x120" }
-                AsyncImage(
-                    model = avatar,
-                    contentDescription = user.username,
+                Surface(
                     modifier = Modifier
-                        .size(120.dp)
-                        .clip(CircleShape),
-                    contentScale = ContentScale.Crop
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = user.username, // String explícito -> sin ambigüedad
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 22.sp,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = "${user.followers} seguidores • ${user.following} siguiendo",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedButton(
-                    onClick = { onEditProfile() },
-                    shape = RoundedCornerShape(50)
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                    shape = RoundedCornerShape(28.dp)
                 ) {
-                    Text("Editar perfil", color = MaterialTheme.colorScheme.onPrimaryContainer)
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                if (state.favoriteAlbums.isNotEmpty()) {
-                    Text(
-                        "Tus álbumes favoritos",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        modifier = Modifier.padding(vertical = 16.dp)
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        items(state.favoriteAlbums.size) { index ->
-                            val album = state.favoriteAlbums[index]
-                            Column(
-                                modifier = Modifier
-                                    .width(120.dp)
-                                    .clickable {
-                                        onAlbumSelected(album.id)
-                                    },
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                AsyncImage(
-                                    model = album.coverUrl,
-                                    contentDescription = album.title,
-                                    modifier = Modifier
-                                        .size(120.dp)
-                                        .clip(RoundedCornerShape(8.dp)),
-                                    contentScale = ContentScale.Crop
-                                )
+                        // ---------- Header: usa datos de 'user' (NO del state) ----------
+                        val avatar: String = user.avatarUrl.ifEmpty { "https://placehold.co/120x120" }
+                        AsyncImage(
+                            model = avatar,
+                            contentDescription = user.username,
+                            modifier = Modifier
+                                .size(120.dp)
+                                .clip(CircleShape),
+                            contentScale = ContentScale.Crop
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = user.username, // String explícito -> sin ambigüedad
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 22.sp,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                        Text(
+                            text = "${user.followers} seguidores • ${user.following} siguiendo",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedButton(
+                            onClick = { onEditProfile() },
+                            shape = RoundedCornerShape(50),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = MaterialTheme.colorScheme.primary
+                            )
+                        ) {
+                            Text("Editar perfil")
+                        }
 
-                                Spacer(Modifier.height(6.dp))
-                                Text(
-                                    album.title,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    fontWeight = FontWeight.Bold,
-                                    maxLines = 1,
-                                    fontSize = 14.sp
-                                )
-                                Text(
-                                    album.artist.name,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    fontSize = 12.sp
-                                )
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        if (state.favoriteAlbums.isNotEmpty()) {
+                            Text(
+                                "Tus álbumes favoritos",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            LazyRow(
+                                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                modifier = Modifier.padding(vertical = 16.dp)
+                            ) {
+                                items(state.favoriteAlbums.size) { index ->
+                                    val album = state.favoriteAlbums[index]
+                                    Column(
+                                        modifier = Modifier
+                                            .width(120.dp)
+                                            .clickable {
+                                                onAlbumSelected(album.id)
+                                            },
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        AsyncImage(
+                                            model = album.coverUrl,
+                                            contentDescription = album.title,
+                                            modifier = Modifier
+                                                .size(120.dp)
+                                                .clip(RoundedCornerShape(8.dp)),
+                                            contentScale = ContentScale.Crop
+                                        )
+
+                                        Spacer(Modifier.height(6.dp))
+                                        Text(
+                                            album.title,
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            fontWeight = FontWeight.Bold,
+                                            maxLines = 1,
+                                            fontSize = 14.sp
+                                        )
+                                        Text(
+                                            album.artist.name,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            fontSize = 12.sp
+                                        )
+                                    }
+                                }
                             }
                         }
-                    }
-                }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
 
-                Text(
-                    "Tus reseñas",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    // forEachIndexed para tener el índice (Int) que el VM espera
-                    state.reviews.forEachIndexed { idx, review ->
-                        val album = albumMap[review.albumId]
-                        if (album != null) {
-                            ReviewItem(
-                                review = review,
-                                album = album,
-                                onClick = {
-                                    onReviewSelected(idx)
+                        Text(
+                            "Tus reseñas",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                            // forEachIndexed para tener el índice (Int) que el VM espera
+                            state.reviews.forEachIndexed { idx, review ->
+                                val album = albumMap[review.albumId]
+                                if (album != null) {
+                                    ReviewItem(
+                                        review = review,
+                                        album = album,
+                                        onClick = {
+                                            onReviewSelected(idx)
+                                        }
+                                    )
                                 }
-                            )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        Button(
+                            onClick = { /* navegación extra */ },
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                            shape = RoundedCornerShape(50),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Ver reseñas y playlists", color = MaterialTheme.colorScheme.onPrimary)
                         }
                     }
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Button(
-                    onClick = { /* navegación extra */ },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                    shape = RoundedCornerShape(50),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Ver reseñas y playlists", color = MaterialTheme.colorScheme.onPrimary)
                 }
             }
         }
