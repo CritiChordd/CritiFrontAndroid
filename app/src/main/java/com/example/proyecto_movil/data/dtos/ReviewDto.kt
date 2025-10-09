@@ -3,17 +3,16 @@ package com.example.proyecto_movil.data.dtos
 import com.example.proyecto_movil.data.ReviewInfo
 
 data class ReviewDto(
-    val id: String,
-    val content: String,
-    val score: Double,
-    val is_low_score: Boolean,
-    val album_id: Int,
-    val user_id: Int,
-    val createdAt: String,
-    val updatedAt: String
-) {
-    constructor() : this("", "", 0.0, false, 0, 0, "", "")
-}
+    val id: String = "",
+    val content: String = "",
+    val score: Double = 0.0,
+    val is_low_score: Boolean = false,
+    val album_id: Int = 0,
+    val user_id: String = "",
+    val firebase_user_id: String? = null,
+    val createdAt: String = "",
+    val updatedAt: String = ""
+)
 
 
 fun ReviewDto.toReviewInfo(): ReviewInfo {
@@ -24,6 +23,7 @@ fun ReviewDto.toReviewInfo(): ReviewInfo {
         isLowScore = is_low_score,
         albumId = album_id,
         userId = user_id,
+        firebaseUserId = firebase_user_id,
         createdAt = createdAt,
         updatedAt = updatedAt,
         liked = false

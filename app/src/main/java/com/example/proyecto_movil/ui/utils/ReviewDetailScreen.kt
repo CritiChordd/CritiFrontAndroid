@@ -139,7 +139,7 @@ fun ReviewDetailScreenLightPreview() {
                     score = 9.0,
                     isLowScore = false,
                     albumId = 10,
-                    userId = 1,
+                    userId = "1",
                     createdAt = "",
                     updatedAt = "",
                     liked = false

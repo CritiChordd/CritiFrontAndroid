@@ -54,7 +54,7 @@ fun UserProfileScreen(
     val albumMap = remember(user.playlists) {
         user.playlists
             .flatMap { it.albums }
-            .associateBy { it.id.toString() }
+            .associateBy { it.id }
     }
 
     val isDark = isSystemInDarkTheme()
@@ -348,9 +348,9 @@ private fun UserProfileScreenPreview() {
         ReviewInfo(
             id = "review1",
             content = "Una producción impecable con letras profundas.",
-            score = 8,
+            score = 8.0,
             isLowScore = false,
-            albumId = sampleAlbums[0].id.toString(),
+            albumId = sampleAlbums[0].id,
             userId = sampleUser.id,
             createdAt = "2024-01-01",
             updatedAt = "2024-01-01"
@@ -358,9 +358,9 @@ private fun UserProfileScreenPreview() {
         ReviewInfo(
             id = "review2",
             content = "Ritmos contagiosos ideales para bailar.",
-            score = 9,
+            score = 9.0,
             isLowScore = false,
-            albumId = sampleAlbums[1].id.toString(),
+            albumId = sampleAlbums[1].id,
             userId = sampleUser.id,
             createdAt = "2024-02-14",
             updatedAt = "2024-02-14"

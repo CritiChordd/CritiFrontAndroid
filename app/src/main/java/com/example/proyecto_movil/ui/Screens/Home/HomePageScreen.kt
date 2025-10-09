@@ -1,20 +1,36 @@
 package com.example.proyecto_movil.uiViews.homePage
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.example.proyecto_movil.R
 import com.example.proyecto_movil.data.AlbumInfo
+import com.example.proyecto_movil.data.UserInfo
 import com.example.proyecto_movil.ui.Screens.Home.HomeViewModel
 import com.example.proyecto_movil.ui.theme.Proyecto_movilTheme
 import com.example.proyecto_movil.ui.utils.ScreenBackground
@@ -24,7 +40,8 @@ import com.example.proyecto_movil.ui.utils.AlbumCard
 fun HomeScreen(
     viewModel: HomeViewModel,
     modifier: Modifier = Modifier,
-    onAlbumClick: (AlbumInfo) -> Unit = {}
+    onAlbumClick: (AlbumInfo) -> Unit = {},
+    onReviewProfileImageClicked: (String) -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsState()
 
@@ -39,6 +56,20 @@ fun HomeScreen(
             verticalArrangement = Arrangement.spacedBy(24.dp),
             contentPadding = PaddingValues(bottom = 32.dp)
         ) {
+            item {
+                SearchSection(
+                    isSearchActive = state.isSearchActive,
+                    searchQuery = state.searchQuery,
+                    isSearching = state.isSearching,
+                    results = state.searchResults,
+                    errorMessage = state.searchError,
+                    onToggleSearch = viewModel::toggleSearch,
+                    onQueryChange = viewModel::onSearchQueryChanged,
+                    onClearQuery = viewModel::clearSearch,
+                    onUserClick = viewModel::onUserResultClicked
+                )
+            }
+
             // 🔹 Sección: Novedades
             item {
                 SectionRow(
@@ -75,9 +106,137 @@ fun HomeScreen(
             viewModel.consumeOpenAlbum()
         }
     }
+
+    LaunchedEffect(state.navigateToUserId) {
+        state.navigateToUserId?.let { uid ->
+            onReviewProfileImageClicked(uid)
+            viewModel.consumeNavigateToUser()
+        }
+    }
 }
 
 /* ---------- Subcomponentes ---------- */
+
+@Composable
+private fun SearchSection(
+    isSearchActive: Boolean,
+    searchQuery: String,
+    isSearching: Boolean,
+    results: List<UserInfo>,
+    errorMessage: String?,
+    onToggleSearch: () -> Unit,
+    onQueryChange: (String) -> Unit,
+    onClearQuery: () -> Unit,
+    onUserClick: (UserInfo) -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Explora usuarios",
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+            IconButton(onClick = onToggleSearch) {
+                Icon(
+                    imageVector = if (isSearchActive) Icons.Filled.Close else Icons.Filled.Search,
+                    contentDescription = if (isSearchActive) "Cerrar búsqueda" else "Buscar usuarios"
+                )
+            }
+        }
+
+        if (isSearchActive) {
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = onQueryChange,
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Buscar por nombre o usuario") },
+                trailingIcon = {
+                    if (searchQuery.isNotBlank()) {
+                        IconButton(onClick = onClearQuery) {
+                            Icon(imageVector = Icons.Filled.Close, contentDescription = "Limpiar búsqueda")
+                        }
+                    }
+                },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                    focusedLabelColor = MaterialTheme.colorScheme.primary
+                )
+            )
+
+            if (isSearching) {
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            }
+
+            when {
+                results.isNotEmpty() -> {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        results.forEach { user ->
+                            UserResultRow(user = user, onClick = onUserClick)
+                        }
+                    }
+                }
+
+                errorMessage != null -> {
+                    val isInfo = errorMessage.contains("No se encontraron", ignoreCase = true)
+                    Text(
+                        text = errorMessage,
+                        color = if (isInfo) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun UserResultRow(user: UserInfo, onClick: (UserInfo) -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp)
+                .clickable { onClick(user) },
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            AsyncImage(
+                model = user.profileImageUrl.ifBlank { "https://placehold.co/100x100" },
+                contentDescription = "Avatar de ${user.username}",
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(MaterialTheme.shapes.medium),
+                contentScale = ContentScale.Crop
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = user.name.ifBlank { user.username },
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                if (user.username.isNotBlank()) {
+                    Text(
+                        text = "@${user.username}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+    }
+}
 
 @Composable
 private fun SectionRow(
@@ -98,7 +257,10 @@ private fun SectionRow(
             contentPadding = PaddingValues(horizontal = 8.dp)
         ) {
             items(albums) { album ->
-                AlbumCard(album = album) { onAlbumClick(album) }
+                AlbumCard(
+                    album = album,
+                    onClick = { onAlbumClick(album) }
+                )
             }
         }
     }

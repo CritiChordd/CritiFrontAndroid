@@ -1,6 +1,8 @@
 package com.example.proyecto_movil.di
 
 import com.example.proyecto_movil.data.datasource.ArtistRemoteDataSource
+import com.example.proyecto_movil.data.datasource.ReviewRemoteDataSource
+import com.example.proyecto_movil.data.datasource.impl.firestore.ReviewFirestoreDataSourceImpl
 import com.example.proyecto_movil.data.datasource.impl.firestore.UserFirestoreDataSourceImpl
 import com.example.proyecto_movil.data.datasource.impl.retrofit.*
 import com.example.proyecto_movil.data.datasource.services.*
@@ -61,7 +63,7 @@ object AppModule {
         AlbumRetrofitDataSourceImpl(service)
 
     @Singleton @Provides
-    fun provideReviewRemoteDataSource(service: ReviewRetrofitService) =
+    fun provideReviewRetrofitDataSource(service: ReviewRetrofitService) =
         ReviewRetrofitDataSourceImplement(service)
 
     @Singleton @Provides
@@ -82,16 +84,23 @@ object AppModule {
     fun provideUserFirestoreDataSourceImpl(firestore: FirebaseFirestore) =
         UserFirestoreDataSourceImpl(firestore)
 
+    @Singleton
+    @Provides
+    fun provideReviewFirestoreDataSource(firestore: FirebaseFirestore) =
+        ReviewFirestoreDataSourceImpl(firestore)
+
+    @Singleton
+    @Provides
+    fun provideReviewRemoteDataSource(
+        firestoreDataSource: ReviewFirestoreDataSourceImpl
+    ): ReviewRemoteDataSource = firestoreDataSource
+
     // ---------------- Repositorios ----------------
     @Singleton @Provides
     fun provideAlbumRepository(ds: AlbumRetrofitDataSourceImpl) = AlbumRepository(ds)
 
     @Singleton @Provides
-    fun provideReviewRepository(ds: ReviewRetrofitDataSourceImplement) = ReviewRepository(
-        ds,
-        userRemoteDataSource = TODO(),
-        authRemoteDataSource = TODO()
-    )
+    fun provideReviewRepository(ds: ReviewRemoteDataSource) = ReviewRepository(ds)
 
     @Singleton @Provides
     fun providePlaylistRepository(ds: PlaylistRetrofitDataSourceImpl) = PlaylistRepository(ds)

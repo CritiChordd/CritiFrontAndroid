@@ -5,23 +5,29 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.proyecto_movil.data.AlbumInfo
 import com.example.proyecto_movil.data.ReviewInfo
+import com.example.proyecto_movil.data.UserInfo
 import com.example.proyecto_movil.data.repository.AlbumRepository
 import com.example.proyecto_movil.data.repository.ReviewRepository
+import com.example.proyecto_movil.data.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
 import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val albumRepository: AlbumRepository,
-    private val reviewRepository: ReviewRepository
+    private val reviewRepository: ReviewRepository,
+    private val userRepository: UserRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeState())
     val uiState: StateFlow<HomeState> = _uiState
+
+    private var searchJob: Job? = null
 
     init {
         loadAlbumsAndReviews()
@@ -69,6 +75,89 @@ class HomeViewModel @Inject constructor(
     /** 🔹 Consumir navegación al álbum */
     fun consumeOpenAlbum() =
         _uiState.update { it.copy(openAlbum = null) }
+
+    /** 🔍 Mostrar u ocultar la barra de búsqueda */
+    fun toggleSearch() {
+        val newActive = !_uiState.value.isSearchActive
+        _uiState.update {
+            it.copy(
+                isSearchActive = newActive,
+                searchQuery = if (newActive) it.searchQuery else "",
+                searchResults = if (newActive) it.searchResults else emptyList(),
+                searchError = null,
+                isSearching = if (newActive) it.isSearching else false
+            )
+        }
+        if (!newActive) {
+            searchJob?.cancel()
+            searchJob = null
+        }
+    }
+
+    fun onSearchQueryChanged(query: String) {
+        _uiState.update { it.copy(searchQuery = query) }
+
+        if (query.length < 2) {
+            searchJob?.cancel()
+            _uiState.update { it.copy(searchResults = emptyList(), searchError = null, isSearching = false) }
+            return
+        }
+
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch {
+            _uiState.update { it.copy(isSearching = true, searchError = null) }
+            userRepository.searchUsersByName(query, limit = 8).fold(
+                onSuccess = { users ->
+                    _uiState.update {
+                        it.copy(
+                            searchResults = users,
+                            isSearching = false,
+                            searchError = if (users.isEmpty()) "No se encontraron usuarios" else null
+                        )
+                    }
+                },
+                onFailure = { e ->
+                    _uiState.update {
+                        it.copy(
+                            searchResults = emptyList(),
+                            isSearching = false,
+                            searchError = e.message ?: "Error buscando usuarios"
+                        )
+                    }
+                }
+            )
+        }
+    }
+
+    fun clearSearch() {
+        searchJob?.cancel()
+        searchJob = null
+        _uiState.update {
+            it.copy(
+                searchQuery = "",
+                searchResults = emptyList(),
+                searchError = null,
+                isSearching = false
+            )
+        }
+    }
+
+    fun onUserResultClicked(user: UserInfo) {
+        searchJob?.cancel()
+        searchJob = null
+        _uiState.update {
+            it.copy(
+                navigateToUserId = user.id,
+                isSearchActive = false,
+                searchResults = emptyList(),
+                searchQuery = "",
+                searchError = null
+            )
+        }
+    }
+
+    fun consumeNavigateToUser() =
+        _uiState.update { it.copy(navigateToUserId = null) }
 
     /** 🔹 Filtrar lanzamientos recientes */
     fun getNewReleases(): List<AlbumInfo> =
