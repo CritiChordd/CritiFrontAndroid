@@ -102,10 +102,10 @@ class AddReviewViewModel @Inject constructor(
             return
         }
 
-        // 🌀 Reset de errores previos
+       
         _uiState.update { it.copy(showMessage = false, errorMessage = "") }
 
-        // 🚀 Enviar al backend
+        
         viewModelScope.launch {
             try {
                 val normalizedScore = (s.scorePercent / 10.0).roundToInt()
