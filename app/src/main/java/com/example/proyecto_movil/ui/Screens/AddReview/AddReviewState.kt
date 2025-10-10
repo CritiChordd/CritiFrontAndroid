@@ -21,5 +21,14 @@ data class AddReviewState(
     val currentFavoriteCount: Int = 0,
     val navigateCancel: Boolean = false,
     val navigatePublished: Boolean = false,
-    val navigateToSettings: Boolean = false
+    val navigateToSettings: Boolean = false,
+    val showCreateAlbumDialog: Boolean = false,
+    val creatingAlbum: Boolean = false,
+    val createAlbumError: String? = null,
+    val newAlbumTitle: String = "",
+    val newAlbumYear: String = "",
+    val newAlbumCoverUrl: String = "",
+    val newArtistName: String = "",
+    val newArtistImageUrl: String = "",
+    val newArtistGenre: String = ""
 )
