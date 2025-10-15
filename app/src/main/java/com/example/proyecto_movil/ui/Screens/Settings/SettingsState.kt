@@ -1,8 +1,9 @@
 package com.example.proyecto_movil.ui.Screens.Settings
 
 data class SettingsState(
+    val displayName: String = "",
     val username: String = "",
-    val avatarRes: Int = 0,
+    val avatarUrl: String = "",
 
     val preferDarkMode: Boolean = true,
 
@@ -18,5 +19,11 @@ data class SettingsState(
     val pushNotifications: Boolean = true,
     val emailNotifications: Boolean = true,
 
-    val navigateBack: Boolean = false
+    val profileUserId: String? = null,
+    val isLoadingProfile: Boolean = false,
+    val errorMessage: String? = null,
+
+    val navigateBack: Boolean = false,
+    val navigateToLogin: Boolean = false,
+    val navigateToProfile: String? = null
 )

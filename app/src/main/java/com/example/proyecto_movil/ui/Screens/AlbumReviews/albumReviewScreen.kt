@@ -102,7 +102,7 @@ fun AlbumReviewScreen(
                 )
             }
 
-            if (state.reviews.isEmpty()) {
+            if (state.reviewItems.isEmpty()) {
                 item {
                     Text(
                         text = "Aún no hay reseñas para este álbum",
@@ -113,9 +113,14 @@ fun AlbumReviewScreen(
                     )
                 }
             } else {
-                items(state.reviews) { review ->
+                items(state.reviewItems) { item ->
                     ReviewCard(
-                        review = review,
+                        review = item.review,
+                        author = item.author,
+                        albumTitle = state.albumTitle,
+                        albumArtist = state.albumArtist,
+                        albumYear = state.albumYear,
+                        albumCoverUrl = state.albumCoverRes,
                         onUserClick = viewModel::onUserClicked
                     )
                 }
