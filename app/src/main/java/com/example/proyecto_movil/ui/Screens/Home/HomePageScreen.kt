@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -41,7 +42,8 @@ fun HomeScreen(
     viewModel: HomeViewModel,
     modifier: Modifier = Modifier,
     onAlbumClick: (AlbumInfo) -> Unit = {},
-    onReviewProfileImageClicked: (String) -> Unit = {}
+    onReviewProfileImageClicked: (String) -> Unit = {},
+    onNotificationsClick: () -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsState()
 
@@ -66,7 +68,8 @@ fun HomeScreen(
                     onToggleSearch = viewModel::toggleSearch,
                     onQueryChange = viewModel::onSearchQueryChanged,
                     onClearQuery = viewModel::clearSearch,
-                    onUserClick = viewModel::onUserResultClicked
+                    onUserClick = viewModel::onUserResultClicked,
+                    onNotificationsClick = onNotificationsClick
                 )
             }
 
@@ -127,7 +130,8 @@ private fun SearchSection(
     onToggleSearch: () -> Unit,
     onQueryChange: (String) -> Unit,
     onClearQuery: () -> Unit,
-    onUserClick: (UserInfo) -> Unit
+    onUserClick: (UserInfo) -> Unit,
+    onNotificationsClick: () -> Unit
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -138,11 +142,22 @@ private fun SearchSection(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "Explora usuarios",
-                style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.onBackground
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                IconButton(onClick = onNotificationsClick) {
+                    Icon(
+                        imageVector = Icons.Filled.Notifications,
+                        contentDescription = "Ver notificaciones"
+                    )
+                }
+                Text(
+                    text = "Explora usuarios",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+            }
             IconButton(onClick = onToggleSearch) {
                 Icon(
                     imageVector = if (isSearchActive) Icons.Filled.Close else Icons.Filled.Search,

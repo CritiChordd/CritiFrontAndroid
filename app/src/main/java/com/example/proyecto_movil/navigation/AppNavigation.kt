@@ -42,6 +42,7 @@ import com.example.proyecto_movil.ui.Screens.EditProfile.EditProfileViewModel
 import com.example.proyecto_movil.ui.Screens.AlbumReviews.AlbumReviewScreen
 import com.example.proyecto_movil.ui.Screens.AlbumReviews.AlbumReviewViewModel
 import com.example.proyecto_movil.ui.Screens.ReviewDetail.ReviewDetailViewModel
+import com.example.proyecto_movil.ui.Screens.Notifications.NotificationsScreen
 import com.example.proyecto_movil.ui.theme.Proyecto_movilTheme
 import com.example.proyecto_movil.ui.utils.ReviewDetailScreen
 import com.google.firebase.auth.FirebaseAuth
@@ -128,6 +129,9 @@ fun AppNavHost(
                 modifier = Modifier,
                 onReviewProfileImageClicked = { uid: String ->
                     navController.navigate(Screen.Profile.createRoute(uid))
+                },
+                onNotificationsClick = {
+                    navController.navigate(Screen.Notifications.route)
                 }
             )
         }
@@ -278,6 +282,13 @@ fun AppNavHost(
                 }
                 else -> SimpleLoading()
             }
+        }
+
+        /* NOTIFICATIONS */
+        composable(Screen.Notifications.route) {
+            NotificationsScreen(
+                onBackClick = { navController.navigateUp() }
+            )
         }
 
         /* CONTENT ARTIST */
