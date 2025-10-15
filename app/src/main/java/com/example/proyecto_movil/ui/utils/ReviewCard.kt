@@ -179,6 +179,7 @@ fun ReviewCard(
 }
 
 @Preview
+@Composable
 fun ReviewCardPreview() {
     Proyecto_movilTheme {
         ReviewCard(
