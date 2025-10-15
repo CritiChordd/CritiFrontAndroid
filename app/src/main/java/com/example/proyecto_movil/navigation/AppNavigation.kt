@@ -313,7 +313,16 @@ fun AppNavHost(
             val vm: SettingsViewModel = hiltViewModel()
             SettingsScreen(
                 viewModel = vm,
-                onBackClick = { navController.navigateUp() }
+                onBackClick = { navController.navigateUp() },
+                onNavigateToProfile = { userId ->
+                    navController.navigate(Screen.Profile.createRoute(userId))
+                },
+                onLoggedOut = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
             )
         }
 

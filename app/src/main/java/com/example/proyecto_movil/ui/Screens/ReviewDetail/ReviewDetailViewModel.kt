@@ -46,7 +46,13 @@ class ReviewDetailViewModel @Inject constructor(
                 albumRepository.getAlbumById(albumId).getOrNull()
             }
 
-            val author = review.userId.takeIf { it.isNotBlank() }?.let { userId ->
+            val authorId = when {
+                !review.firebaseUserId.isNullOrBlank() -> review.firebaseUserId
+                review.userId.isNotBlank() -> review.userId
+                else -> null
+            }
+
+            val author = authorId?.let { userId ->
                 userRepository.getUserById(userId).getOrNull()
             }
 
