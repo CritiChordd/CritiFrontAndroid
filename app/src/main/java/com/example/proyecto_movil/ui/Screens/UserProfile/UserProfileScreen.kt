@@ -48,6 +48,7 @@ import kotlin.math.roundToInt
 fun UserProfileScreen(
     state: UserProfileState,
     user: UserInfo,
+    isOwnProfile: Boolean,
     onBackClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
     onReviewProfileImageClicked: (String) -> Unit,
@@ -143,15 +144,17 @@ fun UserProfileScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-                        OutlinedButton(
-                            onClick = { onEditProfile() },
-                            shape = RoundedCornerShape(50),
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = MaterialTheme.colorScheme.primary
-                            )
-                        ) {
-                            Text("Editar perfil")
+                        if (isOwnProfile) {
+                            OutlinedButton(
+                                onClick = { onEditProfile() },
+                                shape = RoundedCornerShape(50),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.primary
+                                )
+                            ) {
+                                Text("Editar perfil")
+                            }
                         }
 
                         Spacer(modifier = Modifier.height(24.dp))
@@ -403,6 +406,7 @@ private fun UserProfileScreenPreview() {
         UserProfileScreen(
             state = sampleState,
             user = sampleUser,
+            isOwnProfile = true,
             onBackClick = {},
             onSettingsClick = {},
             onEditProfile = {},

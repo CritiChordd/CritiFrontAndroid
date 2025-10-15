@@ -4,8 +4,11 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.proyecto_movil.data.ReviewInfo
+import com.example.proyecto_movil.data.UserInfo
 import com.example.proyecto_movil.data.repository.AlbumRepository
 import com.example.proyecto_movil.data.repository.ReviewRepository
+import com.example.proyecto_movil.data.repository.UserRepository
+import kotlin.math.roundToInt
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,7 +19,8 @@ import javax.inject.Inject
 @HiltViewModel
 class AlbumReviewViewModel @Inject constructor(
     private val reviewRepository: ReviewRepository,
-    private val albumRepository: AlbumRepository
+    private val albumRepository: AlbumRepository,
+    private val userRepository: UserRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AlbumReviewState())
@@ -51,12 +55,41 @@ class AlbumReviewViewModel @Inject constructor(
 
                 Log.d("AlbumReviewVM", "📀 Album '${album.title}' tiene ${reviews.size} reseñas")
 
-                // 🔹 3. Calcular promedio
+                // 🔹 3. Obtener usuarios asociados a las reseñas
+                val userIds = reviews.mapNotNull { review ->
+                    when {
+                        !review.firebaseUserId.isNullOrBlank() -> review.firebaseUserId
+                        review.userId.isNotBlank() -> review.userId
+                        else -> null
+                    }
+                }.distinct()
+
+                val usersById = mutableMapOf<String, UserInfo>()
+                for (userId in userIds) {
+                    val userInfo = userRepository.getUserById(userId).getOrNull()
+                    if (userInfo != null) {
+                        usersById[userId] = userInfo
+                    }
+                }
+
+                val reviewItems = reviews.map { review ->
+                    val authorId = when {
+                        !review.firebaseUserId.isNullOrBlank() -> review.firebaseUserId
+                        review.userId.isNotBlank() -> review.userId
+                        else -> null
+                    }
+                    AlbumReviewItem(
+                        review = review,
+                        author = authorId?.let(usersById::get)
+                    )
+                }
+
+                // 🔹 4. Calcular promedio en porcentaje
                 val avg: Int? = if (reviews.isNotEmpty()) {
-                    (reviews.sumOf { it.score } / reviews.size).toInt()
+                    ((reviews.sumOf { it.score } / reviews.size) * 10).roundToInt()
                 } else null
 
-                // 🔹 4. Actualizar el estado
+                // 🔹 5. Actualizar el estado
                 _uiState.update {
                     it.copy(
                         albumId = album.id,
@@ -66,6 +99,7 @@ class AlbumReviewViewModel @Inject constructor(
                         albumYear = album.year,
                         artistProfileRes = album.artist.profileImageUrl,
                         reviews = reviews,
+                        reviewItems = reviewItems,
                         avgPercent = avg,
                         isLoading = false,
                         showMessage = false,

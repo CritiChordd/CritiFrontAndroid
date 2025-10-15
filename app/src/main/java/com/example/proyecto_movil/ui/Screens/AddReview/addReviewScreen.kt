@@ -49,6 +49,10 @@ fun AddReviewScreen(
                 enabled = albums.isNotEmpty()
             )
 
+            TextButton(onClick = { viewModel.onOpenCreateAlbumDialog() }) {
+                Text("Crear nuevo álbum")
+            }
+
             // Campo de texto para la reseña
             OutlinedTextField(
                 value = state.reviewText,
@@ -151,6 +155,27 @@ fun AddReviewScreen(
             viewModel.consumePublished()
         }
     }
+
+    if (state.showCreateAlbumDialog) {
+        CreateAlbumDialog(
+            title = state.newAlbumTitle,
+            year = state.newAlbumYear,
+            coverUrl = state.newAlbumCoverUrl,
+            artistName = state.newArtistName,
+            artistImageUrl = state.newArtistImageUrl,
+            artistGenre = state.newArtistGenre,
+            isLoading = state.creatingAlbum,
+            errorMessage = state.createAlbumError,
+            onTitleChange = viewModel::updateNewAlbumTitle,
+            onYearChange = viewModel::updateNewAlbumYear,
+            onCoverChange = viewModel::updateNewAlbumCover,
+            onArtistNameChange = viewModel::updateNewArtistName,
+            onArtistImageChange = viewModel::updateNewArtistImage,
+            onArtistGenreChange = viewModel::updateNewArtistGenre,
+            onDismiss = viewModel::onDismissCreateAlbumDialog,
+            onConfirm = viewModel::submitNewAlbum
+        )
+    }
 }
 
 /* ---------- Dropdown para álbumes ---------- */
@@ -191,5 +216,101 @@ fun AlbumDropdown(
         }
     }
 
+}
+
+@Composable
+fun CreateAlbumDialog(
+    title: String,
+    year: String,
+    coverUrl: String,
+    artistName: String,
+    artistImageUrl: String,
+    artistGenre: String,
+    isLoading: Boolean,
+    errorMessage: String?,
+    onTitleChange: (String) -> Unit,
+    onYearChange: (String) -> Unit,
+    onCoverChange: (String) -> Unit,
+    onArtistNameChange: (String) -> Unit,
+    onArtistImageChange: (String) -> Unit,
+    onArtistGenreChange: (String) -> Unit,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = { if (!isLoading) onDismiss() },
+        title = { Text("Crear nuevo álbum") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = onTitleChange,
+                    label = { Text("Título del álbum") },
+                    singleLine = true,
+                    enabled = !isLoading,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = artistName,
+                    onValueChange = onArtistNameChange,
+                    label = { Text("Artista") },
+                    singleLine = true,
+                    enabled = !isLoading,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = year,
+                    onValueChange = onYearChange,
+                    label = { Text("Año de lanzamiento") },
+                    singleLine = true,
+                    enabled = !isLoading,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = coverUrl,
+                    onValueChange = onCoverChange,
+                    label = { Text("URL de portada") },
+                    enabled = !isLoading,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = artistImageUrl,
+                    onValueChange = onArtistImageChange,
+                    label = { Text("URL de foto del artista") },
+                    enabled = !isLoading,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = artistGenre,
+                    onValueChange = onArtistGenreChange,
+                    label = { Text("Género musical") },
+                    enabled = !isLoading,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                if (errorMessage != null) {
+                    Text(
+                        text = errorMessage,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+
+                if (isLoading) {
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm, enabled = !isLoading) {
+                Text("Guardar")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !isLoading) {
+                Text("Cancelar")
+            }
+        }
+    )
 }
 

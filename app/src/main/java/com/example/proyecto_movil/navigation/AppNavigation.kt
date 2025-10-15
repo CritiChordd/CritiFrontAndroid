@@ -138,6 +138,7 @@ fun AppNavHost(
             arguments = listOf(navArgument("uid") { type = NavType.StringType })
         ) { backStackEntry ->
             val uid = backStackEntry.arguments?.getString("uid").orEmpty()
+            val currentUid = FirebaseAuth.getInstance().currentUser?.uid
             val vm: UserProfileViewModel = hiltViewModel()
 
             LaunchedEffect(uid) { if (uid.isNotBlank()) vm.setInitialData(uid) }
@@ -185,6 +186,7 @@ fun AppNavHost(
                     UserProfileScreen(
                         state = state,
                         user = state.user,
+                        isOwnProfile = uid.isNotBlank() && uid == currentUid,
                         onBackClick = vm::onBackClicked,
                         onSettingsClick = vm::onSettingsClicked,
                         onEditProfile = vm::onEditProfileClicked,

@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.proyecto_movil.data.AlbumInfo
 import com.example.proyecto_movil.data.ReviewInfo
+import com.example.proyecto_movil.data.dtos.CreateAlbumDto
 import com.example.proyecto_movil.data.repository.AlbumRepository
 import com.example.proyecto_movil.data.repository.ReviewRepository
 import com.example.proyecto_movil.data.repository.UserRepository
@@ -205,6 +206,102 @@ class AddReviewViewModel @Inject constructor(
 
     fun onSettingsClicked() =
         _uiState.update { it.copy(navigateToSettings = true) }
+
+    /* ---------- Creación de álbumes ---------- */
+
+    fun onOpenCreateAlbumDialog() =
+        _uiState.update {
+            it.copy(
+                showCreateAlbumDialog = true,
+                createAlbumError = null
+            )
+        }
+
+    fun onDismissCreateAlbumDialog() =
+        _uiState.update {
+            it.copy(
+                showCreateAlbumDialog = false,
+                creatingAlbum = false,
+                createAlbumError = null
+            )
+        }
+
+    fun updateNewAlbumTitle(value: String) =
+        _uiState.update { it.copy(newAlbumTitle = value) }
+
+    fun updateNewAlbumYear(value: String) =
+        _uiState.update { it.copy(newAlbumYear = value) }
+
+    fun updateNewAlbumCover(value: String) =
+        _uiState.update { it.copy(newAlbumCoverUrl = value) }
+
+    fun updateNewArtistName(value: String) =
+        _uiState.update { it.copy(newArtistName = value) }
+
+    fun updateNewArtistImage(value: String) =
+        _uiState.update { it.copy(newArtistImageUrl = value) }
+
+    fun updateNewArtistGenre(value: String) =
+        _uiState.update { it.copy(newArtistGenre = value) }
+
+    fun submitNewAlbum() {
+        val snapshot = _uiState.value
+        val title = snapshot.newAlbumTitle.trim()
+        val artistName = snapshot.newArtistName.trim()
+
+        if (title.isBlank() || artistName.isBlank()) {
+            _uiState.update {
+                it.copy(createAlbumError = "El título y el artista son obligatorios")
+            }
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(creatingAlbum = true, createAlbumError = null) }
+
+            val request = CreateAlbumDto(
+                title = title,
+                year = snapshot.newAlbumYear.trim(),
+                coverUrl = snapshot.newAlbumCoverUrl.trim(),
+                artistName = artistName,
+                artistImageUrl = snapshot.newArtistImageUrl.trim(),
+                artistGenre = snapshot.newArtistGenre.trim()
+            )
+
+            val result = albumRepository.createAlbum(request)
+            result.onSuccess { album ->
+                _uiState.update { current ->
+                    val updatedAlbums = (current.availableAlbums + album)
+                        .distinctBy(AlbumInfo::id)
+                        .sortedBy { it.title.lowercase() }
+
+                    current.copy(
+                        availableAlbums = updatedAlbums,
+                        albumId = album.id,
+                        albumTitle = album.title,
+                        albumArtist = album.artist.name,
+                        albumYear = album.year,
+                        albumCoverRes = album.coverUrl,
+                        showCreateAlbumDialog = false,
+                        creatingAlbum = false,
+                        createAlbumError = null,
+                        newAlbumTitle = "",
+                        newAlbumYear = "",
+                        newAlbumCoverUrl = "",
+                        newArtistName = "",
+                        newArtistImageUrl = "",
+                        newArtistGenre = ""
+                    )
+                }
+            }.onFailure { error ->
+                val message = error.message?.takeIf { it.isNotBlank() }
+                    ?: "No se pudo crear el álbum"
+                _uiState.update {
+                    it.copy(creatingAlbum = false, createAlbumError = message)
+                }
+            }
+        }
+    }
 
     private fun loadAlbums() {
         viewModelScope.launch {

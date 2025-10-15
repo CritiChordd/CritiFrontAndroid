@@ -1,7 +1,9 @@
 package com.example.proyecto_movil.di
 
+import com.example.proyecto_movil.data.datasource.AlbumRemoteDataSource
 import com.example.proyecto_movil.data.datasource.ArtistRemoteDataSource
 import com.example.proyecto_movil.data.datasource.ReviewRemoteDataSource
+import com.example.proyecto_movil.data.datasource.impl.firestore.AlbumFirestoreDataSourceImpl
 import com.example.proyecto_movil.data.datasource.impl.firestore.ReviewFirestoreDataSourceImpl
 import com.example.proyecto_movil.data.datasource.impl.firestore.UserFirestoreDataSourceImpl
 import com.example.proyecto_movil.data.datasource.impl.retrofit.*
@@ -59,7 +61,7 @@ object AppModule {
 
     // DataSources Retrofit
     @Singleton @Provides
-    fun provideAlbumRemoteDataSource(service: AlbumRetrofitService) =
+    fun provideAlbumRetrofitDataSource(service: AlbumRetrofitService) =
         AlbumRetrofitDataSourceImpl(service)
 
     @Singleton @Provides
@@ -95,9 +97,21 @@ object AppModule {
         firestoreDataSource: ReviewFirestoreDataSourceImpl
     ): ReviewRemoteDataSource = firestoreDataSource
 
+    @Singleton
+    @Provides
+    fun provideAlbumFirestoreDataSource(
+        firestore: FirebaseFirestore
+    ): AlbumFirestoreDataSourceImpl = AlbumFirestoreDataSourceImpl(firestore)
+
+    @Singleton
+    @Provides
+    fun provideAlbumRemoteDataSource(
+        firestoreDataSource: AlbumFirestoreDataSourceImpl
+    ): AlbumRemoteDataSource = firestoreDataSource
+
     // ---------------- Repositorios ----------------
     @Singleton @Provides
-    fun provideAlbumRepository(ds: AlbumRetrofitDataSourceImpl) = AlbumRepository(ds)
+    fun provideAlbumRepository(ds: AlbumRemoteDataSource) = AlbumRepository(ds)
 
     @Singleton @Provides
     fun provideReviewRepository(ds: ReviewRemoteDataSource) = ReviewRepository(ds)
