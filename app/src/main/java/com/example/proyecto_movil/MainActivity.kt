@@ -44,16 +44,7 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-}
 
-
-@Preview
-@Composable
-fun MainPreview() {
-    Proyecto_movilTheme {
-        CritiChordApp()
-    }
-}
     private fun requestNotificationsPermissionIfNeeded() {
         if (Build.VERSION.SDK_INT >= 33) {
             val permission = Manifest.permission.POST_NOTIFICATIONS
@@ -79,3 +70,13 @@ fun MainPreview() {
             }
         }
     }
+}
+
+
+@Preview
+@Composable
+fun MainPreview() {
+    Proyecto_movilTheme {
+        CritiChordApp()
+    }
+}
