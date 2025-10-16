@@ -112,5 +112,5 @@ object AppModule {
     fun provideStorageRepository(storage: FirebaseStorage) = StorageRepository(storage)
 
     @Singleton @Provides
-    fun provideContentRepository(ds: ContentRemoteDataSource) = ContentRepository(ds)
+    fun provideContentRepository(ds: ContentRemoteDataSource): ContentRepository = ContentRepository(ds)
 }
