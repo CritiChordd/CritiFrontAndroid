@@ -135,21 +135,12 @@ class ReviewFirestoreDataSourceImpl @Inject constructor(
         val reviewRef = db.collection("reviews").document(reviewId)
         val likeRef = reviewRef.collection("likes").document(userId)
 
-        db.runTransaction { transaction ->
-            val likeDoc = transaction.get(likeRef)
-
-            if (likeDoc.exists()) {
-                // Quitar like
-                transaction.delete(likeRef)
-                val current = transaction.get(reviewRef).getLong("likesCount") ?: 0
-                transaction.update(reviewRef, "likesCount", maxOf(0, current - 1))
-            } else {
-                // Agregar like
-                transaction.set(likeRef, mapOf("timestamp" to FieldValue.serverTimestamp()))
-                val current = transaction.get(reviewRef).getLong("likesCount") ?: 0
-                transaction.update(reviewRef, "likesCount", current + 1)
-            }
-        }.await()
+        val likeDoc = likeRef.get().await()
+        if (likeDoc.exists()) {
+            likeRef.delete().await()
+        } else {
+            likeRef.set(mapOf("timestamp" to FieldValue.serverTimestamp())).await()
+        }
     }
 
 

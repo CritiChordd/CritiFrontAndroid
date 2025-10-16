@@ -19,6 +19,8 @@ class AuthRepository @Inject constructor(
     suspend fun signIn(email: String, password: String): Result<Unit> {
         return try {
             authRemoteDataSource.signIn(email, password)
+            // Actualiza y guarda el token FCM tras login
+            runCatching { authRemoteDataSource.refreshFcmTokenAndSave() }
             Result.success(Unit)
         }catch (e: FirebaseAuthInvalidUserException) {
       Result.failure(Exception("El usuario no existe"))
@@ -33,6 +35,8 @@ class AuthRepository @Inject constructor(
     suspend fun signUp(email: String, password: String): Result<Unit> {
         try {
             authRemoteDataSource.signUp(email, password)
+            // Actualiza y guarda el token FCM tras registro
+            runCatching { authRemoteDataSource.refreshFcmTokenAndSave() }
             return Result.success(Unit)
         }
         catch (e: Exception) {

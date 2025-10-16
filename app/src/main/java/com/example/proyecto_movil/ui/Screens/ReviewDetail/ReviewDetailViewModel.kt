@@ -37,7 +37,7 @@ class ReviewDetailViewModel @Inject constructor(
         currentUserId = userId
 
         viewModelScope.launch {
-            // 1️⃣ Obtener review base
+            // 1?? Obtener review base
             val reviewRes = reviewRepository.getReviewById(reviewId)
             val review = reviewRes.getOrNull()
 
@@ -47,24 +47,25 @@ class ReviewDetailViewModel @Inject constructor(
                 Log.e(TAG, "getReviewById error: ${reviewRes.exceptionOrNull()}")
             }
 
-            // 2️⃣ Cargar autor
+            // 2?? Cargar autor
             val authorId = _uiState.value.review?.userId.orEmpty()
             if (authorId.isNotBlank()) {
                 val authorRes = userRepository.getUserById(authorId)
                 _uiState.update { s -> s.copy(author = authorRes.getOrNull()) }
             }
 
-            // 3️⃣ Cargar álbum
+            // 3?? Cargar álbum
             val albumId = _uiState.value.review?.albumId
             if (albumId != null) {
                 val albumRes = albumRepository.getAlbumById(albumId)
                 _uiState.update { s -> s.copy(album = albumRes.getOrNull()) }
             }
 
-            // 4️⃣ Listener en tiempo real al likesCount
+            // 4) Listener en tiempo real al conteo de likes basado en la subcolección
             firestore.collection(REVIEWS).document(reviewId)
+                .collection(LIKES)
                 .addSnapshotListener { snap, _ ->
-                    val count = snap?.getLong("likesCount")?.toInt() ?: 0
+                    val count = snap?.size() ?: 0
                     _uiState.update { st ->
                         val r = st.review
                         st.copy(
@@ -74,7 +75,7 @@ class ReviewDetailViewModel @Inject constructor(
                     }
                 }
 
-            // 5️⃣ Listener para saber si el usuario ya dio like
+            // 5?? Listener para saber si el usuario ya dio like
             firestore.collection(REVIEWS).document(reviewId)
                 .collection(LIKES).document(userId)
                 .addSnapshotListener { likeDoc, _ ->
