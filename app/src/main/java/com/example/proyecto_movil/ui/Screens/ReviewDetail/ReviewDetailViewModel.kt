@@ -70,4 +70,23 @@ class ReviewDetailViewModel @Inject constructor(
     fun consumeError() {
         _uiState.update { it.copy(errorMessage = null) }
     }
+
+    fun sendOrDeleteReviewLike(reviewId: String, userId: String) {
+        viewModelScope.launch {
+            val result = reviewRepository.sendOrDeleteReviewLike(reviewId, userId)
+            if (result.isSuccess) {
+                _uiState.update {
+                    it.copy(
+                        review = it.review?.copy(likes = it.review.likes + 1)
+                    )
+                }
+
+            } else {
+
+
+            }
+
+
+        }
+    }
 }

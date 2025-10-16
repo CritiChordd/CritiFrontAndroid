@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.FieldValue
 
 class ReviewFirestoreDataSourceImpl @Inject constructor(
     private val db: FirebaseFirestore
@@ -130,9 +131,23 @@ class ReviewFirestoreDataSourceImpl @Inject constructor(
         }
     }
 
-    override suspend fun sendOrDeleteLike(reviewId: String, liked: Boolean) {
-        
+    override suspend fun sendOrDeleteReviewLike(reviewId: String, userId: String) {
+       val reviewRef = db.collection("reviews").document(reviewId)
+       val likesRef = reviewRef.collection("likes").document(userId)
+
+        db.runTransaction { transaction ->
+
+            val likeDoc = transaction.get(likesRef)
+            if (likeDoc.exists()) {
+                transaction.delete(likesRef)
+                transaction.update(reviewRef, "likesCount", FieldValue.increment(-1))
+            } else {
+                transaction.set(likesRef, mapOf("timestamp" to FieldValue.serverTimestamp()))
+                transaction.update(reviewRef, "likesCount", FieldValue.increment(1))
+            }
+        }
     }
+
 
     private fun DocumentSnapshot.toReviewDtoOrNull(): ReviewDto? {
         val base = this.toObject(ReviewDto::class.java) ?: return null
