@@ -7,10 +7,13 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -49,6 +52,35 @@ fun HomeScreen(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
                 contentPadding = PaddingValues(bottom = 16.dp)
             ) {
+                item {
+                    Text(
+                        text = "Feed en vivo",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    Spacer(Modifier.height(8.dp))
+                }
+                items(state.contentFeed) { post ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text(text = post.text, color = MaterialTheme.colorScheme.onBackground)
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                text = "Likes: ${post.likesCount}",
+                                color = MaterialTheme.colorScheme.onBackground,
+                                style = MaterialTheme.typography.labelMedium
+                            )
+                        }
+                        val liked = state.likedMap[post.id] == true
+                        Button(onClick = { viewModel.onToggleLike(post.id) }) {
+                            Text(if (liked) "Quitar Like" else "Like")
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                }
                 item {
                     SectionRow(
                         title = "Novedades",

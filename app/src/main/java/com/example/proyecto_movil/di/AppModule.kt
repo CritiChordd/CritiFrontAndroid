@@ -1,7 +1,9 @@
 package com.example.proyecto_movil.di
 
 import com.example.proyecto_movil.data.datasource.ArtistRemoteDataSource
+import com.example.proyecto_movil.data.datasource.ContentRemoteDataSource
 import com.example.proyecto_movil.data.datasource.impl.firestore.UserFirestoreDataSourceImpl
+import com.example.proyecto_movil.data.datasource.impl.firestore.ContentFirestoreDataSourceImpl
 import com.example.proyecto_movil.data.datasource.impl.retrofit.*
 import com.example.proyecto_movil.data.datasource.services.*
 import com.example.proyecto_movil.data.repository.*
@@ -82,6 +84,11 @@ object AppModule {
     fun provideUserFirestoreDataSourceImpl(firestore: FirebaseFirestore) =
         UserFirestoreDataSourceImpl(firestore)
 
+    @Singleton
+    @Provides
+    fun provideContentFirestoreDataSourceImpl(firestore: FirebaseFirestore): ContentRemoteDataSource =
+        ContentFirestoreDataSourceImpl(firestore)
+
     // ---------------- Repositorios ----------------
     @Singleton @Provides
     fun provideAlbumRepository(ds: AlbumRetrofitDataSourceImpl) = AlbumRepository(ds)
@@ -103,4 +110,7 @@ object AppModule {
 
     @Singleton @Provides
     fun provideStorageRepository(storage: FirebaseStorage) = StorageRepository(storage)
+
+    @Singleton @Provides
+    fun provideContentRepository(ds: ContentRemoteDataSource) = ContentRepository(ds)
 }

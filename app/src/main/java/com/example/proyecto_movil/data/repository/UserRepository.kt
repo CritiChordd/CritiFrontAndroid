@@ -71,4 +71,31 @@ class UserRepository(
             Result.failure(e)
         }
     }
+
+    suspend fun saveFcmToken(userId: String, token: String): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            userFirestoreDataSource.saveFcmToken(userId, token)
+            Result.success(Unit)
+        } catch (e: Throwable) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun followUser(followerId: String, targetUserId: String): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            userFirestoreDataSource.followUser(followerId, targetUserId)
+            Result.success(Unit)
+        } catch (e: Throwable) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun unfollowUser(followerId: String, targetUserId: String): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            userFirestoreDataSource.unfollowUser(followerId, targetUserId)
+            Result.success(Unit)
+        } catch (e: Throwable) {
+            Result.failure(e)
+        }
+    }
 }

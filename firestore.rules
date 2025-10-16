@@ -1,0 +1,38 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Users can only write/update their own document
+    match /users/{userId} {
+      allow read: if true;
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow update, delete: if request.auth != null && request.auth.uid == userId;
+
+      // Followers and following subcollections are managed by the app logic
+      match /followers/{followerId} {
+        allow read: if request.auth != null;
+        // Write follower doc only if the follower is the authenticated user
+        allow create, update, delete: if request.auth != null && request.auth.uid == followerId;
+      }
+      match /following/{targetUserId} {
+        allow read: if request.auth != null;
+        // Only the authenticated user can manage their own 'following'
+        allow create, update, delete: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // Content collection with likes subcollection
+    match /content/{contentId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && request.resource.data.authorId == request.auth.uid;
+
+      match /likes/{uid} {
+        allow read: if request.auth != null;
+        // Only allow like doc where the id matches the authenticated user
+        allow create, update, delete: if request.auth != null && request.auth.uid == uid;
+      }
+    }
+  }
+}
+

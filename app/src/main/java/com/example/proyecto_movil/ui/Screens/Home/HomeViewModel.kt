@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.proyecto_movil.data.AlbumInfo
 import com.example.proyecto_movil.data.repository.AlbumRepository
+import com.example.proyecto_movil.data.repository.ContentRepository
+import com.example.proyecto_movil.data.datasource.AuthRemoteDataSource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,7 +16,9 @@ import kotlinx.coroutines.launch
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val albumRepository: AlbumRepository
+    private val albumRepository: AlbumRepository,
+    private val contentRepository: ContentRepository,
+    private val authRemoteDataSource: AuthRemoteDataSource
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeState())
@@ -22,6 +26,7 @@ class HomeViewModel @Inject constructor(
 
     init {
         loadAlbums()
+        collectLiveContent()
     }
 
     private fun loadAlbums() {
@@ -38,8 +43,42 @@ class HomeViewModel @Inject constructor(
                 _uiState.update { it.copy(albumList = albums) }
             } else {
                 Log.e("HomeViewModel", "❌ Error al cargar álbumes", result.exceptionOrNull())
+    }
+
+    private fun collectLiveContent() {
+        viewModelScope.launch {
+            contentRepository.listenAllContent().collect { feed ->
+                _uiState.update { it.copy(contentFeed = feed) }
+
+                // Optionally precompute like state per content for current user
+                val uid = authRemoteDataSource.currentUser?.uid
+                if (uid != null) {
+                    // Best-effort fire-off checks; errors are ignored
+                    feed.forEach { item ->
+                        launch {
+                            val isLiked = contentRepository.isLiked(item.id, uid).getOrElse { false }
+                            _uiState.update { st ->
+                                st.copy(likedMap = st.likedMap + (item.id to isLiked))
+                            }
+                        }
+                    }
+                }
             }
         }
+    }
+
+    fun onToggleLike(contentId: String) {
+        val uid = authRemoteDataSource.currentUser?.uid ?: return
+        viewModelScope.launch {
+            contentRepository.toggleLike(contentId, uid)
+                .onSuccess { likedNow ->
+                    _uiState.update { st ->
+                        st.copy(likedMap = st.likedMap + (contentId to likedNow))
+                    }
+                }
+        }
+    }
+}
     }
 
     fun onAlbumClicked(album: AlbumInfo) =

@@ -60,4 +60,55 @@ class UserFirestoreDataSourceImpl(
         collection.document(id).update(updates).await()
         return getUserById(id)
     }
+
+    // --- FCM token management ---
+    suspend fun saveFcmToken(userId: String, token: String) {
+        collection.document(userId).update(mapOf("fcmToken" to token)).await()
+    }
+
+    // --- Follow / Unfollow ---
+    suspend fun followUser(followerId: String, targetUserId: String) {
+        if (followerId == targetUserId) return
+        val followerFollowingRef = collection.document(followerId)
+            .collection("following").document(targetUserId)
+        val targetFollowersRef = collection.document(targetUserId)
+            .collection("followers").document(followerId)
+
+        db.runTransaction { txn ->
+            txn.set(followerFollowingRef, mapOf("since" to System.currentTimeMillis()))
+            txn.set(targetFollowersRef, mapOf("since" to System.currentTimeMillis()))
+
+            // Optionally maintain counters on user documents
+            val followerDoc = collection.document(followerId)
+            val targetDoc = collection.document(targetUserId)
+            val followerSnap = txn.get(followerDoc)
+            val targetSnap = txn.get(targetDoc)
+            val following = (followerSnap.getLong("following") ?: 0L).toInt() + 1
+            val followers = (targetSnap.getLong("followers") ?: 0L).toInt() + 1
+            txn.update(followerDoc, mapOf("following" to following))
+            txn.update(targetDoc, mapOf("followers" to followers))
+        }.await()
+    }
+
+    suspend fun unfollowUser(followerId: String, targetUserId: String) {
+        if (followerId == targetUserId) return
+        val followerFollowingRef = collection.document(followerId)
+            .collection("following").document(targetUserId)
+        val targetFollowersRef = collection.document(targetUserId)
+            .collection("followers").document(followerId)
+
+        db.runTransaction { txn ->
+            txn.delete(followerFollowingRef)
+            txn.delete(targetFollowersRef)
+
+            val followerDoc = collection.document(followerId)
+            val targetDoc = collection.document(targetUserId)
+            val followerSnap = txn.get(followerDoc)
+            val targetSnap = txn.get(targetDoc)
+            val following = (followerSnap.getLong("following") ?: 0L).toInt().minus(1).coerceAtLeast(0)
+            val followers = (targetSnap.getLong("followers") ?: 0L).toInt().minus(1).coerceAtLeast(0)
+            txn.update(followerDoc, mapOf("following" to following))
+            txn.update(targetDoc, mapOf("followers" to followers))
+        }.await()
+    }
 }
