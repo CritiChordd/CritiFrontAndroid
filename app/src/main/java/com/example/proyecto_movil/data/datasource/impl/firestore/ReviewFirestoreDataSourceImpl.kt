@@ -132,20 +132,24 @@ class ReviewFirestoreDataSourceImpl @Inject constructor(
     }
 
     override suspend fun sendOrDeleteReviewLike(reviewId: String, userId: String) {
-       val reviewRef = db.collection("reviews").document(reviewId)
-       val likesRef = reviewRef.collection("likes").document(userId)
+        val reviewRef = db.collection("reviews").document(reviewId)
+        val likeRef = reviewRef.collection("likes").document(userId)
 
         db.runTransaction { transaction ->
+            val likeDoc = transaction.get(likeRef)
 
-            val likeDoc = transaction.get(likesRef)
             if (likeDoc.exists()) {
-                transaction.delete(likesRef)
-                transaction.update(reviewRef, "likesCount", FieldValue.increment(-1))
+                // Quitar like
+                transaction.delete(likeRef)
+                val current = transaction.get(reviewRef).getLong("likesCount") ?: 0
+                transaction.update(reviewRef, "likesCount", maxOf(0, current - 1))
             } else {
-                transaction.set(likesRef, mapOf("timestamp" to FieldValue.serverTimestamp()))
-                transaction.update(reviewRef, "likesCount", FieldValue.increment(1))
+                // Agregar like
+                transaction.set(likeRef, mapOf("timestamp" to FieldValue.serverTimestamp()))
+                val current = transaction.get(reviewRef).getLong("likesCount") ?: 0
+                transaction.update(reviewRef, "likesCount", current + 1)
             }
-        }
+        }.await()
     }
 
 
@@ -166,13 +170,22 @@ class ReviewFirestoreDataSourceImpl @Inject constructor(
 
         val resolvedCreatedAt = base.createdAt.takeIf { it.isNotBlank() }
             ?: data["createdAt"]?.toString().orEmpty()
+
         val resolvedUpdatedAt = base.updatedAt.takeIf { it.isNotBlank() }
             ?: data["updatedAt"]?.toString().orEmpty()
+
         val resolvedFavorite = when (val rawFavorite = data["is_favorite"]) {
             is Boolean -> rawFavorite
             is Number -> rawFavorite.toInt() != 0
             is String -> rawFavorite.equals("true", ignoreCase = true) || rawFavorite == "1"
             else -> base.is_favorite
+        }
+
+        // 👇 Agrega este bloque antes del return
+        val resolvedLikesCount = when (val raw = data["likesCount"]) {
+            is Number -> raw.toInt()
+            is String -> raw.toIntOrNull() ?: 0
+            else -> base.likesCount // usa el valor por defecto del DTO si no existe
         }
 
         return base.copy(
@@ -182,7 +195,9 @@ class ReviewFirestoreDataSourceImpl @Inject constructor(
             firebase_user_id = resolvedFirebaseId,
             createdAt = resolvedCreatedAt,
             updatedAt = resolvedUpdatedAt,
-            is_favorite = resolvedFavorite
+            is_favorite = resolvedFavorite,
+            likesCount = resolvedLikesCount // 👈 ahora sí existe
         )
     }
+
 }

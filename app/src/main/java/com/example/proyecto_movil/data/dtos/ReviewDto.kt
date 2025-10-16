@@ -12,7 +12,10 @@ data class ReviewDto(
     val firebase_user_id: String? = null,
     val createdAt: String = "",
     val updatedAt: String = "",
-    val is_favorite: Boolean = false
+    val is_favorite: Boolean = false,
+
+    // 👇 Nuevo campo para el contador de likes
+    val likesCount: Int = 0
 )
 
 
@@ -27,7 +30,9 @@ fun ReviewDto.toReviewInfo(): ReviewInfo {
         firebaseUserId = firebase_user_id,
         createdAt = createdAt,
         updatedAt = updatedAt,
-        liked = false,
-        isFavorite = is_favorite
+        isFavorite = is_favorite,
+
+        likesCount = likesCount,
+        liked = false // se actualizará dinámicamente desde Firestore
     )
 }

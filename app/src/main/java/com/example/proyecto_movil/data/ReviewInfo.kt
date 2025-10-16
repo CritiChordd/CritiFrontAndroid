@@ -13,5 +13,6 @@ data class ReviewInfo(
     val createdAt: String = "",
     val updatedAt: String = "",
     val liked: Boolean = false,
+    val likesCount: Int = 0,
     val isFavorite: Boolean = false
 )

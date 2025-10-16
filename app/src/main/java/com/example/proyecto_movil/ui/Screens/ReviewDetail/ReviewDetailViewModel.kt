@@ -1,10 +1,12 @@
 package com.example.proyecto_movil.ui.Screens.ReviewDetail
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.proyecto_movil.data.repository.AlbumRepository
 import com.example.proyecto_movil.data.repository.ReviewRepository
 import com.example.proyecto_movil.data.repository.UserRepository
+import com.google.firebase.firestore.FirebaseFirestore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -12,81 +14,109 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+private const val TAG = "ReviewDetailVM"
+private const val REVIEWS = "reviews"
+private const val LIKES = "likes"
+
 @HiltViewModel
 class ReviewDetailViewModel @Inject constructor(
     private val reviewRepository: ReviewRepository,
+    private val userRepository: UserRepository,
     private val albumRepository: AlbumRepository,
-    private val userRepository: UserRepository
+    private val firestore: FirebaseFirestore
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ReviewDetailState())
     val uiState: StateFlow<ReviewDetailState> = _uiState
 
-    private var lastLoadedId: String? = null
+    private var currentReviewId: String = ""
+    private var currentUserId: String = ""
 
-    fun load(reviewId: String) {
-        if (reviewId.isBlank()) return
-        if (lastLoadedId == reviewId && _uiState.value.review != null) return
+    fun load(reviewId: String, userId: String) {
+        currentReviewId = reviewId
+        currentUserId = userId
 
-        lastLoadedId = reviewId
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            // 1️⃣ Obtener review base
+            val reviewRes = reviewRepository.getReviewById(reviewId)
+            val review = reviewRes.getOrNull()
 
-            val review = reviewRepository.getReviewById(reviewId).getOrElse { error ->
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = error.message ?: "No se pudo cargar la reseña"
-                    )
+            if (review != null) {
+                _uiState.update { it.copy(review = review, likes = review.likesCount ?: 0) }
+            } else {
+                Log.e(TAG, "getReviewById error: ${reviewRes.exceptionOrNull()}")
+            }
+
+            // 2️⃣ Cargar autor
+            val authorId = _uiState.value.review?.userId.orEmpty()
+            if (authorId.isNotBlank()) {
+                val authorRes = userRepository.getUserById(authorId)
+                _uiState.update { s -> s.copy(author = authorRes.getOrNull()) }
+            }
+
+            // 3️⃣ Cargar álbum
+            val albumId = _uiState.value.review?.albumId
+            if (albumId != null) {
+                val albumRes = albumRepository.getAlbumById(albumId)
+                _uiState.update { s -> s.copy(album = albumRes.getOrNull()) }
+            }
+
+            // 4️⃣ Listener en tiempo real al likesCount
+            firestore.collection(REVIEWS).document(reviewId)
+                .addSnapshotListener { snap, _ ->
+                    val count = snap?.getLong("likesCount")?.toInt() ?: 0
+                    _uiState.update { st ->
+                        val r = st.review
+                        st.copy(
+                            likes = count,
+                            review = r?.copy(likesCount = count)
+                        )
+                    }
                 }
-                return@launch
-            }
 
-            val album = review.albumId.takeIf { it != 0 }?.let { albumId ->
-                albumRepository.getAlbumById(albumId).getOrNull()
-            }
-
-            val authorId = when {
-                !review.firebaseUserId.isNullOrBlank() -> review.firebaseUserId
-                review.userId.isNotBlank() -> review.userId
-                else -> null
-            }
-
-            val author = authorId?.let { userId ->
-                userRepository.getUserById(userId).getOrNull()
-            }
-
-            _uiState.update {
-                it.copy(
-                    isLoading = false,
-                    review = review,
-                    album = album,
-                    author = author
-                )
-            }
+            // 5️⃣ Listener para saber si el usuario ya dio like
+            firestore.collection(REVIEWS).document(reviewId)
+                .collection(LIKES).document(userId)
+                .addSnapshotListener { likeDoc, _ ->
+                    val liked = likeDoc?.exists() == true
+                    _uiState.update { st ->
+                        val r = st.review
+                        st.copy(
+                            review = r?.copy(liked = liked)
+                        )
+                    }
+                }
         }
     }
 
-    fun consumeError() {
-        _uiState.update { it.copy(errorMessage = null) }
-    }
+    fun toggleLike() {
+        val reviewId = currentReviewId
+        val userId = currentUserId
+        if (reviewId.isBlank() || userId.isBlank()) return
 
-    fun sendOrDeleteReviewLike(reviewId: String, userId: String) {
+        val wasLiked = _uiState.value.review?.liked == true
+        val delta = if (wasLiked) -1 else +1
+
+        _uiState.update { st ->
+            val r = st.review
+            st.copy(
+                likes = (st.likes + delta).coerceAtLeast(0),
+                review = r?.copy(liked = !wasLiked, likesCount = (r?.likesCount ?: 0) + delta)
+            )
+        }
+
         viewModelScope.launch {
-            val result = reviewRepository.sendOrDeleteReviewLike(reviewId, userId)
-            if (result.isSuccess) {
-                _uiState.update {
-                    it.copy(
-                        review = it.review?.copy(likes = it.review.likes + 1)
+            val res = reviewRepository.sendOrDeleteReviewLike(reviewId, userId)
+            res.exceptionOrNull()?.let {
+                Log.e(TAG, "toggleLike error", it)
+                _uiState.update { st ->
+                    val r = st.review
+                    st.copy(
+                        likes = (st.likes - delta).coerceAtLeast(0),
+                        review = r?.copy(liked = wasLiked, likesCount = (r?.likesCount ?: 0) - delta)
                     )
                 }
-
-            } else {
-
-
             }
-
-
         }
     }
 }
