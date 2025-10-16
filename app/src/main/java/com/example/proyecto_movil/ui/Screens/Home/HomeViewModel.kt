@@ -38,11 +38,16 @@ class HomeViewModel @Inject constructor(
                 val albums = result.getOrNull().orEmpty()
                 Log.d("HomeViewModel", "✅ Álbumes cargados: ${albums.size}")
                 albums.forEach {
-                    Log.d("HomeVM", "🎵 ${it.title} (${it.year}) - ${it.artist.name} | Cover: ${it.coverUrl} | ArtistImg: ${it.artist.profileImageUrl}")
+                    Log.d(
+                        "HomeVM",
+                        "🎵 ${it.title} (${it.year}) - ${it.artist.name} | Cover: ${it.coverUrl} | ArtistImg: ${it.artist.profileImageUrl}"
+                    )
                 }
                 _uiState.update { it.copy(albumList = albums) }
             } else {
                 Log.e("HomeViewModel", "❌ Error al cargar álbumes", result.exceptionOrNull())
+            }
+        }
     }
 
     private fun collectLiveContent() {
@@ -50,10 +55,8 @@ class HomeViewModel @Inject constructor(
             contentRepository.listenAllContent().collect { feed ->
                 _uiState.update { it.copy(contentFeed = feed) }
 
-                // Optionally precompute like state per content for current user
                 val uid = authRemoteDataSource.currentUser?.uid
                 if (uid != null) {
-                    // Best-effort fire-off checks; errors are ignored
                     feed.forEach { item ->
                         launch {
                             val isLiked = contentRepository.isLiked(item.id, uid).getOrElse { false }
@@ -77,8 +80,6 @@ class HomeViewModel @Inject constructor(
                     }
                 }
         }
-    }
-}
     }
 
     fun onAlbumClicked(album: AlbumInfo) =
