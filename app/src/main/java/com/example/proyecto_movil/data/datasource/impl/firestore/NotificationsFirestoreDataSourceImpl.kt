@@ -93,7 +93,7 @@ class NotificationsFirestoreDataSourceImpl(
         val notificationRef = db.collection("users")
             .document(userId)
             .collection("notifications")
-            .document("like_${'$'}reviewId_${'$'}likerId")
+            .document("like_${reviewId}_${likerId}")
 
         val data = mapOf(
             "type" to "review_like",
