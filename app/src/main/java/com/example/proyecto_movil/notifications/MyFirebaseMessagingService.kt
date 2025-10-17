@@ -13,6 +13,7 @@ import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
@@ -35,9 +36,50 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
-        // Mostrar notificación simple
-        val title = message.notification?.title ?: message.data["title"] ?: "Nuevo Like"
-        val body = message.notification?.body ?: message.data["body"] ?: "Alguien le ha dado like a tu reseña"
+        val type = message.data["type"]
+
+        if (type == "review_like") {
+            val likerId = message.data["likerId"].orEmpty()
+            val reviewSnippet = message.data["reviewSnippet"].orEmpty()
+
+            // Prioriza el body enviado por FCM si viene completo (incluye nombre)
+            val pushBody = message.notification?.body ?: message.data["body"]
+            if (!pushBody.isNullOrBlank()) {
+                showNotification(
+                    title = message.notification?.title ?: "Nuevo Like",
+                    body = pushBody
+                )
+                return
+            }
+
+            // Si no viene el body con el nombre, intentamos obtener el nombre del usuario que dio like
+            CoroutineScope(Dispatchers.IO).launch {
+                val likerName = runCatching {
+                    if (likerId.isNotBlank()) {
+                        val doc = FirebaseFirestore.getInstance().collection("users").document(likerId).get().await()
+                        doc.getString("name")?.takeIf { it.isNotBlank() }
+                            ?: doc.getString("username")?.takeIf { it.isNotBlank() }
+                    } else null
+                }.getOrNull() ?: "Alguien"
+
+                val title = "Nuevo Like"
+                val body = buildString {
+                    append("$likerName le dio like a tu reseña")
+                    if (reviewSnippet.isNotBlank()) {
+                        append('\n')
+                        append('"')
+                        append(reviewSnippet)
+                        append('"')
+                    }
+                }
+                showNotification(title, body)
+            }
+            return
+        }
+
+        // Caso genérico (seguidores u otros tipos)
+        val title = message.notification?.title ?: message.data["title"] ?: "Notificación"
+        val body = message.notification?.body ?: message.data["body"] ?: "Tienes una nueva notificación"
         showNotification(title, body)
     }
 

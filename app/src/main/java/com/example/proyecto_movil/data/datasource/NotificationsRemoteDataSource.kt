@@ -12,5 +12,13 @@ interface NotificationsRemoteDataSource {
         followerName: String,
         followerAvatarUrl: String
     )
+
+    suspend fun addLikeNotification(
+        userId: String,
+        reviewId: String,
+        likerId: String,
+        likerName: String,
+        reviewSnippet: String?
+    )
 }
 

@@ -78,5 +78,31 @@ class NotificationsFirestoreDataSourceImpl(
 
         notificationRef.set(data, SetOptions.merge()).await()
     }
-}
 
+    override suspend fun addLikeNotification(
+        userId: String,
+        reviewId: String,
+        likerId: String,
+        likerName: String,
+        reviewSnippet: String?
+    ) {
+        if (userId.isBlank() || reviewId.isBlank() || likerId.isBlank()) return
+
+        val notificationRef = db.collection("users")
+            .document(userId)
+            .collection("notifications")
+            .document("like_${'$'}reviewId_${'$'}likerId")
+
+        val data = mapOf(
+            "type" to "review_like",
+            "reviewId" to reviewId,
+            "likerId" to likerId,
+            "likerName" to likerName,
+            "reviewSnippet" to (reviewSnippet ?: ""),
+            "createdAt" to FieldValue.serverTimestamp(),
+            "read" to false,
+        )
+
+        notificationRef.set(data, SetOptions.merge()).await()
+    }
+}
