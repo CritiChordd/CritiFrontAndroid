@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -46,7 +47,10 @@ import com.example.proyecto_movil.ui.Screens.Notifications.NotificationsScreen
 import com.example.proyecto_movil.ui.theme.Proyecto_movilTheme
 import com.example.proyecto_movil.ui.utils.ReviewDetailScreen
 import com.google.firebase.auth.FirebaseAuth
+import com.example.proyecto_movil.ui.Screens.FollowList.FollowListViewModel
+import com.example.proyecto_movil.ui.Screens.FollowList.FollowListScreen
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppNavHost(
     navController: NavHostController,
@@ -58,7 +62,7 @@ fun AppNavHost(
         startDestination = startDestination,
         modifier = modifier
     ) {
-        /* WELCOME */
+        /* ------------------ WELCOME ------------------ */
         composable(Screen.Welcome.route) {
             val vm: WelcomeViewModel = hiltViewModel()
             WelcomeScreen(
@@ -67,7 +71,7 @@ fun AppNavHost(
             )
         }
 
-        /* LOGIN */
+        /* ------------------ LOGIN ------------------ */
         composable(Screen.Login.route) {
             val vm: LoginViewModel = hiltViewModel()
             val state = vm.uiState.collectAsState().value
@@ -90,12 +94,11 @@ fun AppNavHost(
             )
         }
 
-        /* REGISTER */
+        /* ------------------ REGISTER ------------------ */
         composable(Screen.Register.route) {
             val vm: RegisterViewModel = hiltViewModel()
             val state = vm.uiState.collectAsState().value
 
-            // Si decides navegar a Home después de registrarse:
             if (state.navigateAfterRegister) {
                 LaunchedEffect(Unit) {
                     navController.navigate(Screen.Home.route) {
@@ -118,7 +121,7 @@ fun AppNavHost(
             )
         }
 
-        /* HOME */
+        /* ------------------ HOME ------------------ */
         composable(Screen.Home.route) {
             val vm: HomeViewModel = hiltViewModel()
             HomeScreen(
@@ -126,7 +129,6 @@ fun AppNavHost(
                 onAlbumClick = { album: AlbumInfo ->
                     navController.navigate(Screen.Album.createRoute(album.id))
                 },
-                modifier = Modifier,
                 onReviewProfileImageClicked = { uid: String ->
                     navController.navigate(Screen.Profile.createRoute(uid))
                 },
@@ -136,7 +138,7 @@ fun AppNavHost(
             )
         }
 
-        /* PROFILE (por UID String) */
+        /* ------------------ PROFILE ------------------ */
         composable(
             route = Screen.Profile.route,
             arguments = listOf(navArgument("uid") { type = NavType.StringType })
@@ -201,14 +203,66 @@ fun AppNavHost(
                                 navController.navigate(Screen.Profile.createRoute(targetUid))
                             }
                         },
-                        onToggleFollow = vm::onFollowClicked
+                        onToggleFollow = vm::onFollowClicked,
+                        // 🆕 nuevos callbacks de navegación
+                        onOpenFollowers = { ownerUid ->
+                            navController.navigate(Screen.Followers.createRoute(ownerUid))
+                        },
+                        onOpenFollowing = { ownerUid ->
+                            navController.navigate(Screen.Following.createRoute(ownerUid))
+                        }
                     )
                 }
                 else -> SimpleError(state.errorMessage ?: "Usuario no encontrado")
             }
         }
 
-        /* ALBUM */
+        /* FOLLOWERS */
+        composable(
+            route = Screen.Followers.route,
+            arguments = listOf(navArgument("uid") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val uid = backStackEntry.arguments?.getString("uid") ?: return@composable
+            val vm: FollowListViewModel = hiltViewModel(backStackEntry)
+
+            // 👇 Asegura pasar los parámetros antes de recolectar el estado
+            LaunchedEffect(uid) {
+                vm.setParams(uid = uid, mode = "followers")
+            }
+
+            val ui = vm.ui.collectAsState().value
+            FollowListScreen(
+                state = ui,
+                onBack = { navController.navigateUp() },
+                onUserClick = { targetUid ->
+                    navController.navigate(Screen.Profile.createRoute(targetUid))
+                }
+            )
+        }
+
+        /* FOLLOWING */
+        composable(
+            route = Screen.Following.route,
+            arguments = listOf(navArgument("uid") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val uid = backStackEntry.arguments?.getString("uid") ?: return@composable
+            val vm: FollowListViewModel = hiltViewModel(backStackEntry)
+
+            LaunchedEffect(uid) {
+                vm.setParams(uid = uid, mode = "following")
+            }
+
+            val ui = vm.ui.collectAsState().value
+            FollowListScreen(
+                state = ui,
+                onBack = { navController.navigateUp() },
+                onUserClick = { targetUid ->
+                    navController.navigate(Screen.Profile.createRoute(targetUid))
+                }
+            )
+        }
+
+        /* ------------------ ALBUM ------------------ */
         composable(
             route = Screen.Album.route,
             arguments = listOf(navArgument("albumId") { type = NavType.IntType })
@@ -237,7 +291,7 @@ fun AppNavHost(
             }
         }
 
-        /* REVIEW DETAIL */
+        /* ------------------ REVIEW DETAIL ------------------ */
         composable(
             route = Screen.ReviewDetail.route,
             arguments = listOf(navArgument("reviewId") { type = NavType.StringType })
@@ -245,23 +299,17 @@ fun AppNavHost(
             val encodedId = backStackEntry.arguments?.getString("reviewId") ?: return@composable
             val reviewId = Uri.decode(encodedId)
 
-            // ViewModel
             val vm: ReviewDetailViewModel = hiltViewModel()
             val state = vm.uiState.collectAsState().value
-
-            // 🔹 Nuevo: obtenemos el UID del usuario actual
             val userId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
 
-            // 🔹 Cargamos los datos con el userId
             LaunchedEffect(reviewId, userId) {
                 if (userId.isNotBlank()) vm.load(reviewId, userId)
             }
 
             when {
                 state.isLoading -> SimpleLoading()
-                state.errorMessage != null -> {
-                    SimpleError(state.errorMessage)
-                }
+                state.errorMessage != null -> SimpleError(state.errorMessage)
                 state.review != null -> {
                     val author = state.author
                     val album = state.album
@@ -284,12 +332,9 @@ fun AppNavHost(
                         albumCoverUrl = coverUrl,
                         artistName = artistName,
                         albumYear = albumYear,
-
-                        // 🔹 Nuevos parámetros obligatorios:
                         liked = state.review.liked,
                         likesCount = state.review.likesCount,
                         onToggleLike = { vm.toggleLike() },
-
                         onBack = { navController.popBackStack() }
                     )
                 }
@@ -297,11 +342,11 @@ fun AppNavHost(
             }
         }
 
-        /* NOTIFICATIONS */
+        /* ------------------ NOTIFICATIONS ------------------ */
         composable(Screen.Notifications.route) {
             val vm: com.example.proyecto_movil.ui.Screens.Notifications.NotificationsViewModel = hiltViewModel()
             val state = vm.uiState.collectAsState().value
-            com.example.proyecto_movil.ui.Screens.Notifications.NotificationsScreen(
+            NotificationsScreen(
                 onBackClick = { navController.navigateUp() },
                 state = state,
                 onNotificationUserClick = { userId ->
@@ -312,7 +357,7 @@ fun AppNavHost(
             )
         }
 
-        /* CONTENT ARTIST */
+        /* ------------------ CONTENT ARTIST ------------------ */
         composable(
             route = Screen.ContentArtist.route,
             arguments = listOf(navArgument("artistId") { type = NavType.IntType })
@@ -328,19 +373,7 @@ fun AppNavHost(
             )
         }
 
-        /* CONTENT USER (propietario) */
-        composable(Screen.ContentUser.route) {
-            val vm: ContentViewModel = hiltViewModel()
-            LaunchedEffect(Unit) { vm.setInitial(artistId = null, isOwner = true) }
-            ContentScreen(
-                viewModel = vm,
-                onBack = { navController.navigateUp() },
-                onOpenAlbum = { id -> navController.navigate(Screen.Album.createRoute(id)) },
-                onEditAlbum = { /* TODO */ }
-            )
-        }
-
-        /* SETTINGS */
+        /* ------------------ SETTINGS ------------------ */
         composable(Screen.Settings.route) {
             val vm: SettingsViewModel = hiltViewModel()
             SettingsScreen(
@@ -358,7 +391,7 @@ fun AppNavHost(
             )
         }
 
-        /* EDIT PROFILE */
+        /* ------------------ EDIT PROFILE ------------------ */
         composable(Screen.EditProfile.route) {
             val vm: EditProfileViewModel = hiltViewModel()
             val currentUid = FirebaseAuth.getInstance().currentUser?.uid
@@ -379,7 +412,7 @@ fun AppNavHost(
             }
         }
 
-        /* ADD REVIEW */
+        /* ------------------ ADD REVIEW ------------------ */
         composable(Screen.AddReview.route) {
             val vm: AddReviewViewModel = hiltViewModel()
             AddReviewScreen(
@@ -391,7 +424,7 @@ fun AppNavHost(
     }
 }
 
-/* ---------------------- Utils ---------------------- */
+/* ------------------ Utils ------------------ */
 @Composable
 private fun SimpleError(message: String) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -406,6 +439,7 @@ private fun SimpleLoading() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun AppNavHostPreview() {

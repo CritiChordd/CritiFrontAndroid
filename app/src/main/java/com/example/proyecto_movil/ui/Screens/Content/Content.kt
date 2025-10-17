@@ -72,7 +72,7 @@ fun ContentScreen(
                 modifier = Modifier.fillMaxSize()
             ) {
                 // --------- Reseñas ----------
-                TituloAlbum("Reseñas")
+                TituloAlbum("Albumes")
                 Spacer(Modifier.height(12.dp))
 
                 // Igual que tus pantallas: filas en LazyRow con carátula + textos;

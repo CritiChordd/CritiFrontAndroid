@@ -32,4 +32,11 @@ sealed class Screen(val route: String) {
         fun createRoute(reviewId: String) = "reviewDetail/${Uri.encode(reviewId)}"
     }
     object Notifications : Screen("notifications")
+
+    object Followers : Screen("followers/{uid}") {
+        fun createRoute(uid: String) = "followers/$uid"
+    }
+    object Following : Screen("following/{uid}") {
+        fun createRoute(uid: String) = "following/$uid"
+    }
 }

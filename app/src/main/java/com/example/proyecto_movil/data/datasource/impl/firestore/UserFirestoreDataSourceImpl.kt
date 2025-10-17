@@ -5,6 +5,12 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
 import kotlin.collections.mapOf
+import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.FieldPath
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.launch
 
 //aaaa
 class UserFirestoreDataSourceImpl(
@@ -248,6 +254,57 @@ class UserFirestoreDataSourceImpl(
         }.await()
 
         return getUserById(targetUserId, currentUserId)
+    }
+
+
+
+    private suspend fun fetchUsersByIds(ids: List<String>): List<UserInfo> {
+        if (ids.isEmpty()) return emptyList()
+        val batchSize = 10
+        val chunks = ids.chunked(batchSize)
+        val results = mutableListOf<UserInfo>()
+        for (chunk in chunks) {
+            val snap = collection.whereIn(FieldPath.documentId(), chunk).get().await()
+            for (doc in snap.documents) {
+                val data = doc.data ?: continue
+                results += data.toUserInfo(defaultId = doc.id)
+            }
+        }
+        return results
+    }
+
+    fun listenFollowers(userId: String): Flow<List<UserInfo>> = callbackFlow {
+        val reg: ListenerRegistration = collection.document(userId)
+            .collection("followers")
+            .addSnapshotListener { snap, err ->
+                if (err != null) {
+                    trySend(emptyList())
+                    return@addSnapshotListener
+                }
+                val ids = snap?.documents?.mapNotNull { it.id } ?: emptyList()
+                // Lanzamos corrutina para fetch (usamos trySendBlocking fuera; aquí simplificado)
+                kotlinx.coroutines.GlobalScope.launch {
+                    val users = fetchUsersByIds(ids)
+                    trySend(users.sortedBy { it.username.lowercase() })
+                }
+            }
+        awaitClose { reg.remove() }
+    }
+
+    fun listenFollowing(userId: String): Flow<List<UserInfo>> = callbackFlow {
+        val reg: ListenerRegistration = collection.document(userId)
+            .collection("following")
+            .addSnapshotListener { snap, err ->
+                if (err != null) {
+                    trySend(emptyList()); return@addSnapshotListener
+                }
+                val ids = snap?.documents?.mapNotNull { it.id } ?: emptyList()
+                kotlinx.coroutines.GlobalScope.launch {
+                    val users = fetchUsersByIds(ids)
+                    trySend(users.sortedBy { it.username.lowercase() })
+                }
+            }
+        awaitClose { reg.remove() }
     }
 
     private fun Map<String, Any?>.toUserInfo(defaultId: String, followed: Boolean = false): UserInfo {

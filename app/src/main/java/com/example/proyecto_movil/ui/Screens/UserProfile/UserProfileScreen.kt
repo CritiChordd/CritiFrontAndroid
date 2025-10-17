@@ -14,15 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,7 +48,10 @@ fun UserProfileScreen(
     onEditProfile: () -> Unit = {},
     onAlbumSelected: (Int) -> Unit = {},
     onReviewSelected: (String) -> Unit = {},
-    onToggleFollow: () -> Unit = {}
+    onToggleFollow: () -> Unit = {},
+    // 🆕 nuevos callbacks
+    onOpenFollowers: ((String) -> Unit)? = null,
+    onOpenFollowing: ((String) -> Unit)? = null
 ) {
     val isDark = isSystemInDarkTheme()
     val backgroundRes = if (isDark) R.drawable.fondocriti else R.drawable.fondocriti_light
@@ -119,13 +114,14 @@ fun UserProfileScreen(
                             .padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        // ---------- Header: usa datos de 'user' (NO del state) ----------
+                        // ---------- Header ----------
                         val avatar: String = user.avatarUrl.ifEmpty { "https://placehold.co/120x120" }
                         val displayName = remember(user) {
                             sequenceOf(user.name, user.username, user.id)
                                 .firstOrNull { it.isNotBlank() }
                                 ?: "Usuario"
                         }
+
                         AsyncImage(
                             model = avatar,
                             contentDescription = user.username,
@@ -134,18 +130,41 @@ fun UserProfileScreen(
                                 .clip(CircleShape),
                             contentScale = ContentScale.Crop
                         )
+
                         Spacer(modifier = Modifier.height(12.dp))
+
                         Text(
-                            text = displayName, // String explícito -> sin ambigüedad
+                            text = displayName,
                             fontWeight = FontWeight.Bold,
                             fontSize = 22.sp,
                             color = MaterialTheme.colorScheme.onSurface
                         )
-                        Text(
-                            text = "${user.followers} seguidores • ${user.following} siguiendo",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+
+                        // 🆕 Sección clicable de seguidores/seguidos
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "${user.followers} seguidores",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.clickable {
+                                    onOpenFollowers?.invoke(user.id)
+                                }
+                            )
+                            Text("•", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(
+                                text = "${user.following} siguiendo",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.clickable {
+                                    onOpenFollowing?.invoke(user.id)
+                                }
+                            )
+                        }
+
                         Spacer(modifier = Modifier.height(8.dp))
+
                         if (isOwnProfile) {
                             OutlinedButton(
                                 onClick = { onEditProfile() },
@@ -285,6 +304,8 @@ fun UserProfileScreen(
     }
 }
 
+// ------------------------------------------------------------
+
 @Composable
 private fun ReviewItem(item: UserReviewUi, onClick: () -> Unit) {
     val review = item.review
@@ -364,97 +385,4 @@ private fun ReviewItem(item: UserReviewUi, onClick: () -> Unit) {
     }
 }
 
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-private fun UserProfileScreenPreview() {
-    val sampleArtist = ArtistInfo(
-        id = 1,
-        name = "Luna Nova",
-        profileImageUrl = "https://placehold.co/300x300",
-        genre = "Indie"
-    )
-    val sampleAlbums = listOf(
-        AlbumInfo(
-            id = 101,
-            title = "Noches Eléctricas",
-            year = "2023",
-            coverUrl = "https://placehold.co/200x200",
-            artist = sampleArtist
-        ),
-        AlbumInfo(
-            id = 102,
-            title = "Horizontes",
-            year = "2022",
-            coverUrl = "https://placehold.co/200x200/ff6",
-            artist = sampleArtist
-        )
-    )
-    val samplePlaylists = listOf(
-        PlaylistInfo(
-            id = 1,
-            title = "Favoritos recientes",
-            description = "Una mezcla de descubrimientos",
-            albums = sampleAlbums
-        )
-    )
-    val sampleUser = UserInfo(
-        id = "user123",
-        username = "CritiLover",
-        profileImageUrl = "https://placehold.co/120x120",
-        bio = "Fan de los sintetizadores y las reseñas extensas.",
-        followers = 128,
-        following = 87,
-        playlists = samplePlaylists,
-        name = "CritiLover",
-    )
-    val sampleReviews = listOf(
-        ReviewInfo(
-            id = "review1",
-            content = "Una producción impecable con letras profundas.",
-            score = 8.0,
-            isLowScore = false,
-            albumId = sampleAlbums[0].id,
-            userId = sampleUser.id,
-            createdAt = "2024-01-01",
-            updatedAt = "2024-01-01",
-            isFavorite = true
-        ),
-        ReviewInfo(
-            id = "review2",
-            content = "Ritmos contagiosos ideales para bailar.",
-            score = 9.0,
-            isLowScore = false,
-            albumId = sampleAlbums[1].id,
-            userId = sampleUser.id,
-            createdAt = "2024-02-14",
-            updatedAt = "2024-02-14",
-            isFavorite = false
-        )
-    )
-    val sampleReviewItems = sampleReviews.mapIndexed { index, review ->
-        UserReviewUi(
-            review = review,
-            album = sampleAlbums.getOrNull(index)
-        )
-    }
-    val sampleState = UserProfileState(
-        user = sampleUser,
-        reviews = sampleReviews,
-        reviewItems = sampleReviewItems,
-        favoriteAlbums = sampleAlbums
-    )
 
-    Proyecto_movilTheme {
-        UserProfileScreen(
-            state = sampleState,
-            user = sampleUser,
-            isOwnProfile = true,
-            onBackClick = {},
-            onSettingsClick = {},
-            onEditProfile = {},
-            onAlbumSelected = {},
-            onReviewSelected = { _ -> },
-            onReviewProfileImageClicked = {}
-        )
-    }
-}

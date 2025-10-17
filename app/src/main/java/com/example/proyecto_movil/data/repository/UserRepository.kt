@@ -5,6 +5,7 @@ import com.example.proyecto_movil.data.datasource.impl.firestore.UserFirestoreDa
 import com.example.proyecto_movil.data.datasource.impl.retrofit.UserRetrofitDataSourceImpl
 import com.example.proyecto_movil.data.dtos.UpdateUserDto
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 
 class UserRepository(
@@ -109,4 +110,11 @@ class UserRepository(
                 Result.failure(e)
             }
         }
+
+
+    fun listenFollowers(userId: String): Flow<List<UserInfo>> =
+        userFirestoreDataSource.listenFollowers(userId)
+
+    fun listenFollowing(userId: String): Flow<List<UserInfo>> =
+        userFirestoreDataSource.listenFollowing(userId)
 }
