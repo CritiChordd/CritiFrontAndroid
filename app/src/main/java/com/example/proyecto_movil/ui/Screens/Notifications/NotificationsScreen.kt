@@ -140,8 +140,8 @@ private fun NotificationItem(notification: NotificationInfo) {
                 modifier = Modifier
                     .size(48.dp)
                     .clip(CircleShape),
-                placeholder = painterResource(id = R.drawable.logo_app),
-                error = painterResource(id = R.drawable.logo_app)
+                placeholder = painterResource(id = R.drawable.logo),
+                error = painterResource(id = R.drawable.logo)
             )
             Spacer(modifier = Modifier.width(16.dp))
             Column(
