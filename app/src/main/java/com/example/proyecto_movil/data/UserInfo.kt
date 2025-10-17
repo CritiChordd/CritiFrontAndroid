@@ -3,6 +3,11 @@ package com.example.proyecto_movil.data
 import android.os.Parcelable
 import kotlinx.parcelize.Parcelize
 
+
+
+
+
+
 @Parcelize
 data class UserInfo(
     val id: String,
@@ -13,7 +18,8 @@ data class UserInfo(
     val followers: Int = 0,
     val following: Int = 0,
     val playlists: List<PlaylistInfo> = emptyList(),
-    val backendUserId: String? = null
+    val backendUserId: String? = null,
+    var followed: Boolean
 ) : Parcelable {
     
     // Alias para pantallas que usan 'avatarUrl'
