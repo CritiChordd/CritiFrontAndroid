@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -22,11 +23,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import coil.compose.AsyncImage
 import com.example.proyecto_movil.R
 import com.example.proyecto_movil.data.AlbumInfo
@@ -41,7 +46,8 @@ fun HomeScreen(
     viewModel: HomeViewModel,
     modifier: Modifier = Modifier,
     onAlbumClick: (AlbumInfo) -> Unit = {},
-    onReviewProfileImageClicked: (String) -> Unit = {}
+    onReviewProfileImageClicked: (String) -> Unit = {},
+    onNotificationsClick: () -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsState()
 
@@ -66,7 +72,8 @@ fun HomeScreen(
                     onToggleSearch = viewModel::toggleSearch,
                     onQueryChange = viewModel::onSearchQueryChanged,
                     onClearQuery = viewModel::clearSearch,
-                    onUserClick = viewModel::onUserResultClicked
+                    onUserClick = viewModel::onUserResultClicked,
+                    onNotificationsClick = onNotificationsClick
                 )
             }
 
@@ -127,8 +134,21 @@ private fun SearchSection(
     onToggleSearch: () -> Unit,
     onQueryChange: (String) -> Unit,
     onClearQuery: () -> Unit,
-    onUserClick: (UserInfo) -> Unit
+    onUserClick: (UserInfo) -> Unit,
+    onNotificationsClick: () -> Unit
 ) {
+    val focusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    LaunchedEffect(isSearchActive) {
+        if (isSearchActive) {
+            focusRequester.requestFocus()
+            keyboardController?.show()
+        } else {
+            keyboardController?.hide()
+        }
+    }
+
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -138,11 +158,22 @@ private fun SearchSection(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "Explora usuarios",
-                style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.onBackground
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                IconButton(onClick = onNotificationsClick) {
+                    Icon(
+                        imageVector = Icons.Filled.Notifications,
+                        contentDescription = "Ver notificaciones"
+                    )
+                }
+                Text(
+                    text = "Explora usuarios",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+            }
             IconButton(onClick = onToggleSearch) {
                 Icon(
                     imageVector = if (isSearchActive) Icons.Filled.Close else Icons.Filled.Search,
@@ -155,7 +186,9 @@ private fun SearchSection(
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = onQueryChange,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(focusRequester),
                 label = { Text("Buscar por nombre o usuario") },
                 trailingIcon = {
                     if (searchQuery.isNotBlank()) {

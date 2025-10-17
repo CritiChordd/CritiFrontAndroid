@@ -31,4 +31,5 @@ sealed class Screen(val route: String) {
     object ReviewDetail : Screen("reviewDetail/{reviewId}") {
         fun createRoute(reviewId: String) = "reviewDetail/${Uri.encode(reviewId)}"
     }
+    object Notifications : Screen("notifications")
 }

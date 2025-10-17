@@ -1,6 +1,5 @@
 package com.example.proyecto_movil.ui.Screens.Settings
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
@@ -14,12 +13,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.proyecto_movil.R
 import com.example.proyecto_movil.ui.theme.Proyecto_movilTheme
 import com.example.proyecto_movil.ui.utils.ClickableSectionTitle
@@ -29,9 +29,13 @@ import com.example.proyecto_movil.ui.utils.ScreenBackground
 fun SettingsScreen(
     viewModel: SettingsViewModel,
     modifier: Modifier = Modifier,
-    onBackClick: () -> Unit = {}
+    onBackClick: () -> Unit = {},
+    onNavigateToProfile: (String) -> Unit = {},
+    onLoggedOut: () -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(Unit) { viewModel.refreshIfNeeded() }
 
     LaunchedEffect(state.navigateBack) {
         if (state.navigateBack) {
@@ -40,6 +44,62 @@ fun SettingsScreen(
         }
     }
 
+    LaunchedEffect(state.navigateToProfile) {
+        val target = state.navigateToProfile
+        if (!target.isNullOrBlank()) {
+            onNavigateToProfile(target)
+            viewModel.consumeNavigateProfile()
+        }
+    }
+
+    LaunchedEffect(state.navigateToLogin) {
+        if (state.navigateToLogin) {
+            onLoggedOut()
+            viewModel.consumeNavigateLogin()
+        }
+    }
+
+    SettingsScreenContent(
+        state = state,
+        modifier = modifier,
+        onBackClick = viewModel::onBackClicked,
+        onLogoutClick = viewModel::onLogoutClicked,
+        onViewProfile = viewModel::onViewProfileClicked,
+        onToggleDarkMode = viewModel::togglePreferDarkMode,
+        onLanguageClick = viewModel::onLanguageClicked,
+        onToggleHideActivity = viewModel::toggleHideActivity,
+        onToggleShowRecentAlbums = viewModel::toggleShowRecentAlbums,
+        onTogglePublicPlaylists = viewModel::togglePublicPlaylists,
+        onToggleShowPlaylistsOnProfile = viewModel::toggleShowPlaylistsOnProfile,
+        onToggleShowFollowersAndFollowing = viewModel::toggleShowFollowersAndFollowing,
+        onToggleAllowExplicitContent = viewModel::toggleAllowExplicitContent,
+        onToggleShowUnavailableInCountry = viewModel::toggleShowUnavailableInCountry,
+        onTogglePushNotifications = viewModel::togglePushNotifications,
+        onToggleEmailNotifications = viewModel::toggleEmailNotifications,
+        onDeactivateAccount = viewModel::onDeactivateAccountClicked
+    )
+}
+
+@Composable
+private fun SettingsScreenContent(
+    state: SettingsState,
+    modifier: Modifier = Modifier,
+    onBackClick: () -> Unit,
+    onLogoutClick: () -> Unit,
+    onViewProfile: () -> Unit,
+    onToggleDarkMode: () -> Unit,
+    onLanguageClick: () -> Unit,
+    onToggleHideActivity: () -> Unit,
+    onToggleShowRecentAlbums: () -> Unit,
+    onTogglePublicPlaylists: () -> Unit,
+    onToggleShowPlaylistsOnProfile: () -> Unit,
+    onToggleShowFollowersAndFollowing: () -> Unit,
+    onToggleAllowExplicitContent: () -> Unit,
+    onToggleShowUnavailableInCountry: () -> Unit,
+    onTogglePushNotifications: () -> Unit,
+    onToggleEmailNotifications: () -> Unit,
+    onDeactivateAccount: () -> Unit
+) {
     val isDarkSystem = isSystemInDarkTheme()
     val useDarkBackground = state.preferDarkMode || isDarkSystem
     val backgroundRes = if (useDarkBackground) R.drawable.fondocriti else R.drawable.fondocriti_light
@@ -52,24 +112,34 @@ fun SettingsScreen(
         ) {
             item {
                 Header(
-                    onBackClick = { viewModel.onBackClicked() },
-                    onLogoutClick = { viewModel.onLogoutClicked() }
+                    onBackClick = onBackClick,
+                    onLogoutClick = onLogoutClick
                 )
                 Spacer(modifier = Modifier.height(24.dp))
             }
             item {
                 ProfileSection(
+                    displayName = state.displayName.ifBlank { state.username.ifBlank { "Sin nombre" } },
                     username = state.username,
-                    avatarRes = state.avatarRes,
-                    onViewProfile = { viewModel.onViewProfileClicked() }
+                    avatarUrl = state.avatarUrl,
+                    isLoading = state.isLoadingProfile,
+                    onViewProfile = onViewProfile
                 )
                 Spacer(modifier = Modifier.height(32.dp))
+                state.errorMessage?.let { message ->
+                    Text(
+                        text = message,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
             }
             item {
                 SettingsSection(
                     preferDarkMode = state.preferDarkMode,
-                    onToggleDarkMode = { viewModel.togglePreferDarkMode() },
-                    onLanguageClick = { viewModel.onLanguageClicked() }
+                    onToggleDarkMode = onToggleDarkMode,
+                    onLanguageClick = onLanguageClick
                 )
                 Spacer(modifier = Modifier.height(32.dp))
             }
@@ -80,11 +150,11 @@ fun SettingsScreen(
                     publicPlaylists = state.publicPlaylists,
                     showPlaylistsOnProfile = state.showPlaylistsOnProfile,
                     showFollowersAndFollowing = state.showFollowersAndFollowing,
-                    onToggleHideActivity = { viewModel.toggleHideActivity() },
-                    onToggleShowRecentAlbums = { viewModel.toggleShowRecentAlbums() },
-                    onTogglePublicPlaylists = { viewModel.togglePublicPlaylists() },
-                    onToggleShowPlaylistsOnProfile = { viewModel.toggleShowPlaylistsOnProfile() },
-                    onToggleShowFollowersAndFollowing = { viewModel.toggleShowFollowersAndFollowing() }
+                    onToggleHideActivity = onToggleHideActivity,
+                    onToggleShowRecentAlbums = onToggleShowRecentAlbums,
+                    onTogglePublicPlaylists = onTogglePublicPlaylists,
+                    onToggleShowPlaylistsOnProfile = onToggleShowPlaylistsOnProfile,
+                    onToggleShowFollowersAndFollowing = onToggleShowFollowersAndFollowing
                 )
                 Spacer(modifier = Modifier.height(32.dp))
             }
@@ -92,8 +162,8 @@ fun SettingsScreen(
                 ContentSection(
                     allowExplicitContent = state.allowExplicitContent,
                     showUnavailableInCountry = state.showUnavailableInCountry,
-                    onToggleAllowExplicitContent = { viewModel.toggleAllowExplicitContent() },
-                    onToggleShowUnavailableInCountry = { viewModel.toggleShowUnavailableInCountry() }
+                    onToggleAllowExplicitContent = onToggleAllowExplicitContent,
+                    onToggleShowUnavailableInCountry = onToggleShowUnavailableInCountry
                 )
                 Spacer(modifier = Modifier.height(32.dp))
             }
@@ -101,13 +171,13 @@ fun SettingsScreen(
                 NotificationsSection(
                     pushNotifications = state.pushNotifications,
                     emailNotifications = state.emailNotifications,
-                    onTogglePush = { viewModel.togglePushNotifications() },
-                    onToggleEmail = { viewModel.toggleEmailNotifications() }
+                    onTogglePush = onTogglePushNotifications,
+                    onToggleEmail = onToggleEmailNotifications
                 )
                 Spacer(modifier = Modifier.height(32.dp))
             }
             item {
-                DeactivateAccountButton(onClick = { viewModel.onDeactivateAccountClicked() })
+                DeactivateAccountButton(onClick = onDeactivateAccount)
             }
         }
     }
@@ -150,26 +220,44 @@ private fun Header(
 
 @Composable
 private fun ProfileSection(
+    displayName: String,
     username: String,
-    avatarRes: Int,
+    avatarUrl: String,
+    isLoading: Boolean,
     onViewProfile: () -> Unit
 ) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Image(
-            painter = painterResource(id = avatarRes),
-            contentDescription = "Avatar",
-            modifier = Modifier
-                .size(64.dp)
-                .clip(CircleShape)
-        )
+        if (isLoading) {
+            CircularProgressIndicator(
+                modifier = Modifier
+                    .size(40.dp)
+                    .padding(12.dp)
+            )
+        } else {
+            AsyncImage(
+                model = avatarUrl.takeIf { it.isNotBlank() } ?: R.drawable.usuario,
+                contentDescription = "Avatar",
+                modifier = Modifier
+                    .size(64.dp)
+                    .clip(CircleShape),
+                contentScale = ContentScale.Crop
+            )
+        }
         Spacer(modifier = Modifier.width(16.dp))
         Column {
             Text(
-                text = username,
+                text = displayName,
                 color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold
             )
+            if (username.isNotBlank()) {
+                Text(
+                    text = "@${username}",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 14.sp
+                )
+            }
             Text(
                 text = "Ver perfil",
                 color = MaterialTheme.colorScheme.primary,
@@ -319,17 +407,79 @@ private fun DeactivateAccountButton(onClick: () -> Unit) {
 @Preview(showBackground = true, name = "Settings Light", showSystemUi = true)
 @Composable
 fun SettingsScreenLightPreview() {
+    val previewState = SettingsState(
+        displayName = "Alex Critic",
+        username = "alex",
+        avatarUrl = "",
+        preferDarkMode = false,
+        hideActivity = false,
+        showRecentAlbums = true,
+        publicPlaylists = true,
+        showPlaylistsOnProfile = true,
+        showFollowersAndFollowing = true,
+        allowExplicitContent = true,
+        showUnavailableInCountry = false,
+        pushNotifications = true,
+        emailNotifications = false
+    )
     Proyecto_movilTheme(useDarkTheme = false) {
-        val vm = remember { SettingsViewModel() }
-        SettingsScreen(viewModel = vm)
+        SettingsScreenContent(
+            state = previewState,
+            onBackClick = {},
+            onLogoutClick = {},
+            onViewProfile = {},
+            onToggleDarkMode = {},
+            onLanguageClick = {},
+            onToggleHideActivity = {},
+            onToggleShowRecentAlbums = {},
+            onTogglePublicPlaylists = {},
+            onToggleShowPlaylistsOnProfile = {},
+            onToggleShowFollowersAndFollowing = {},
+            onToggleAllowExplicitContent = {},
+            onToggleShowUnavailableInCountry = {},
+            onTogglePushNotifications = {},
+            onToggleEmailNotifications = {},
+            onDeactivateAccount = {}
+        )
     }
 }
 
 @Preview(showBackground = true, name = "Settings Dark", showSystemUi = true)
 @Composable
 fun SettingsScreenDarkPreview() {
+    val previewState = SettingsState(
+        displayName = "Alex Critic",
+        username = "alex",
+        avatarUrl = "",
+        preferDarkMode = true,
+        hideActivity = true,
+        showRecentAlbums = true,
+        publicPlaylists = false,
+        showPlaylistsOnProfile = true,
+        showFollowersAndFollowing = true,
+        allowExplicitContent = true,
+        showUnavailableInCountry = false,
+        pushNotifications = true,
+        emailNotifications = true
+    )
     Proyecto_movilTheme(useDarkTheme = true) {
-        val vm = remember { SettingsViewModel() }
-        SettingsScreen(viewModel = vm)
+        SettingsScreenContent(
+            state = previewState,
+            onBackClick = {},
+            onLogoutClick = {},
+            onViewProfile = {},
+            onToggleDarkMode = {},
+            onLanguageClick = {},
+            onToggleHideActivity = {},
+            onToggleShowRecentAlbums = {},
+            onTogglePublicPlaylists = {},
+            onToggleShowPlaylistsOnProfile = {},
+            onToggleShowFollowersAndFollowing = {},
+            onToggleAllowExplicitContent = {},
+            onToggleShowUnavailableInCountry = {},
+            onTogglePushNotifications = {},
+            onToggleEmailNotifications = {},
+            onDeactivateAccount = {}
+        )
     }
 }

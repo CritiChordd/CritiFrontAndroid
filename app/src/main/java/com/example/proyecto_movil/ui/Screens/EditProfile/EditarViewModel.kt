@@ -21,6 +21,38 @@ class EditProfileViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(EditProfileState())
     val uiState: StateFlow<EditProfileState> = _uiState
 
+    private var lastLoadedUserId: String? = null
+    private var hasLoadedInitialData: Boolean = false
+
+    fun loadInitialProfile(userId: String) {
+        if (userId.isBlank()) return
+        if (hasLoadedInitialData && lastLoadedUserId == userId) return
+
+        lastLoadedUserId = userId
+        viewModelScope.launch {
+            _uiState.update { it.copy(errorMessage = null) }
+            val result = userRepository.getUserById(userId)
+            result.fold(
+                onSuccess = { user ->
+                    hasLoadedInitialData = true
+                    _uiState.update { current ->
+                        current.copy(
+                            avatarUrl = user.profileImageUrl,
+                            nombrePersona = user.bio.takeIf { it.isNotBlank() } ?: user.name,
+                            nombreUsuario = user.username,
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    hasLoadedInitialData = false
+                    _uiState.update {
+                        it.copy(errorMessage = error.message ?: "Error al cargar perfil")
+                    }
+                }
+            )
+        }
+    }
+
     fun onBackClicked() = _uiState.update { it.copy(navigateBack = true) }
     fun consumeBack() = _uiState.update { it.copy(navigateBack = false) }
 

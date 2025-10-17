@@ -1,6 +1,7 @@
 package com.example.proyecto_movil.ui.Screens.AlbumReviews
 
 import com.example.proyecto_movil.data.ReviewInfo
+import com.example.proyecto_movil.data.UserInfo
 
 data class AlbumReviewState(
     val albumId: Int = 0,
@@ -10,6 +11,7 @@ data class AlbumReviewState(
     val albumYear: String = "",
     val artistProfileRes: String = "",
     val reviews: List<ReviewInfo> = emptyList(),
+    val reviewItems: List<AlbumReviewItem> = emptyList(),
     val avgPercent: Int? = null,
 
     // Navegación existente
@@ -22,4 +24,9 @@ data class AlbumReviewState(
 
     // (opcional) loader
     val isLoading: Boolean = false
+)
+
+data class AlbumReviewItem(
+    val review: ReviewInfo,
+    val author: UserInfo?
 )

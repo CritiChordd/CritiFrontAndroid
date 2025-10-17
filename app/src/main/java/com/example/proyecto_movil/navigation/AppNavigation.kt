@@ -42,6 +42,7 @@ import com.example.proyecto_movil.ui.Screens.EditProfile.EditProfileViewModel
 import com.example.proyecto_movil.ui.Screens.AlbumReviews.AlbumReviewScreen
 import com.example.proyecto_movil.ui.Screens.AlbumReviews.AlbumReviewViewModel
 import com.example.proyecto_movil.ui.Screens.ReviewDetail.ReviewDetailViewModel
+import com.example.proyecto_movil.ui.Screens.Notifications.NotificationsScreen
 import com.example.proyecto_movil.ui.theme.Proyecto_movilTheme
 import com.example.proyecto_movil.ui.utils.ReviewDetailScreen
 import com.google.firebase.auth.FirebaseAuth
@@ -128,6 +129,9 @@ fun AppNavHost(
                 modifier = Modifier,
                 onReviewProfileImageClicked = { uid: String ->
                     navController.navigate(Screen.Profile.createRoute(uid))
+                },
+                onNotificationsClick = {
+                    navController.navigate(Screen.Notifications.route)
                 }
             )
         }
@@ -138,6 +142,7 @@ fun AppNavHost(
             arguments = listOf(navArgument("uid") { type = NavType.StringType })
         ) { backStackEntry ->
             val uid = backStackEntry.arguments?.getString("uid").orEmpty()
+            val currentUid = FirebaseAuth.getInstance().currentUser?.uid
             val vm: UserProfileViewModel = hiltViewModel()
 
             LaunchedEffect(uid) { if (uid.isNotBlank()) vm.setInitialData(uid) }
@@ -185,6 +190,7 @@ fun AppNavHost(
                     UserProfileScreen(
                         state = state,
                         user = state.user,
+                        isOwnProfile = uid.isNotBlank() && uid == currentUid,
                         onBackClick = vm::onBackClicked,
                         onSettingsClick = vm::onSettingsClicked,
                         onEditProfile = vm::onEditProfileClicked,
@@ -195,6 +201,7 @@ fun AppNavHost(
                                 navController.navigate(Screen.Profile.createRoute(targetUid))
                             }
                         },
+                        onToggleFollow = vm::onFollowClicked
                     )
                 }
                 else -> SimpleError(state.errorMessage ?: "Usuario no encontrado")
@@ -237,26 +244,32 @@ fun AppNavHost(
         ) { backStackEntry ->
             val encodedId = backStackEntry.arguments?.getString("reviewId") ?: return@composable
             val reviewId = Uri.decode(encodedId)
+
+            // ViewModel
             val vm: ReviewDetailViewModel = hiltViewModel()
             val state = vm.uiState.collectAsState().value
 
-            LaunchedEffect(reviewId) { vm.load(reviewId) }
+            // 🔹 Nuevo: obtenemos el UID del usuario actual
+            val userId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
+
+            // 🔹 Cargamos los datos con el userId
+            LaunchedEffect(reviewId, userId) {
+                if (userId.isNotBlank()) vm.load(reviewId, userId)
+            }
 
             when {
                 state.isLoading -> SimpleLoading()
                 state.errorMessage != null -> {
-                    LaunchedEffect(state.errorMessage) {
-                        vm.consumeError()
-                        navController.popBackStack()
-                    }
                     SimpleError(state.errorMessage)
                 }
                 state.review != null -> {
                     val author = state.author
                     val album = state.album
+
                     val username = author?.username?.takeIf { it.isNotBlank() }
                         ?: author?.name
                         ?: "Usuario"
+
                     val avatarUrl = author?.profileImageUrl ?: ""
                     val albumTitle = album?.title ?: ""
                     val coverUrl = album?.coverUrl ?: ""
@@ -271,11 +284,32 @@ fun AppNavHost(
                         albumCoverUrl = coverUrl,
                         artistName = artistName,
                         albumYear = albumYear,
+
+                        // 🔹 Nuevos parámetros obligatorios:
+                        liked = state.review.liked,
+                        likesCount = state.review.likesCount,
+                        onToggleLike = { vm.toggleLike() },
+
                         onBack = { navController.popBackStack() }
                     )
                 }
                 else -> SimpleLoading()
             }
+        }
+
+        /* NOTIFICATIONS */
+        composable(Screen.Notifications.route) {
+            val vm: com.example.proyecto_movil.ui.Screens.Notifications.NotificationsViewModel = hiltViewModel()
+            val state = vm.uiState.collectAsState().value
+            com.example.proyecto_movil.ui.Screens.Notifications.NotificationsScreen(
+                onBackClick = { navController.navigateUp() },
+                state = state,
+                onNotificationUserClick = { userId ->
+                    if (userId.isNotBlank()) {
+                        navController.navigate(Screen.Profile.createRoute(userId))
+                    }
+                }
+            )
         }
 
         /* CONTENT ARTIST */
@@ -311,7 +345,16 @@ fun AppNavHost(
             val vm: SettingsViewModel = hiltViewModel()
             SettingsScreen(
                 viewModel = vm,
-                onBackClick = { navController.navigateUp() }
+                onBackClick = { navController.navigateUp() },
+                onNavigateToProfile = { userId ->
+                    navController.navigate(Screen.Profile.createRoute(userId))
+                },
+                onLoggedOut = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
             )
         }
 

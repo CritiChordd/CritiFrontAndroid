@@ -2,12 +2,18 @@ package com.example.proyecto_movil.ui.utils
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -25,6 +31,9 @@ fun ReviewDetailScreen(
     albumCoverUrl: String = "",
     artistName: String = "",
     albumYear: String = "",
+    liked: Boolean,
+    likesCount: Int,
+    onToggleLike: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -56,7 +65,9 @@ fun ReviewDetailScreen(
                     contentDescription = username,
                     modifier = Modifier
                         .size(50.dp)
-                        .padding(end = 12.dp)
+                        .clip(CircleShape)
+                        .padding(end = 12.dp),
+                    contentScale = ContentScale.Crop
                 )
                 Column {
                     Text(
@@ -124,47 +135,37 @@ fun ReviewDetailScreen(
                 fontSize = 18.sp,
                 color = MaterialTheme.colorScheme.primary
             )
-        }
-    }
-}
 
-/* ---------- Preview ---------- */
-@Preview(name = "ReviewDetail Light", showSystemUi = true)
-@Composable
-fun ReviewDetailScreenLightPreview() {
-    Proyecto_movilTheme(useDarkTheme = false) {
-        Surface {
-            ReviewDetailScreen(
-                review = ReviewInfo(
-                    id = "1",
-                    content = "Una reseña con mucho detalle sobre este increíble álbum.",
-                    score = 9.0,
-                    isLowScore = false,
-                    albumId = 10,
-                    userId = "1",
-                    createdAt = "",
-                    updatedAt = "",
-                    liked = false,
-                    isFavorite = true
-                ),
-                username = "xocas",
-                userProfileUrl = "https://placehold.co/100x100",
-                albumTitle = "Hybrid Theory",
-                albumCoverUrl = "https://placehold.co/200x200",
-                artistName = "Linkin Park",
-                albumYear = "2000",
-                onBack = {}
+            Spacer(Modifier.height(8.dp))
+
+            // ---------- Likes ----------
+            LikeRow(
+                liked = liked,
+                likesCount = likesCount,
+                onToggleLike = onToggleLike
             )
         }
     }
 }
 
-@Preview(name = "ReviewDetail Dark", showSystemUi = true)
 @Composable
-fun ReviewDetailScreenDarkPreview() {
-    Proyecto_movilTheme(useDarkTheme = true) {
-        Surface {
-            ReviewDetailScreenLightPreview()
+fun LikeRow(
+    liked: Boolean,
+    likesCount: Int,
+    onToggleLike: () -> Unit
+) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        IconButton(onClick = onToggleLike) {
+            Icon(
+                imageVector = if (liked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                contentDescription = "Like",
+                tint = if (liked) Color.Red else Color.Gray
+            )
         }
+        Text(
+            text = "$likesCount likes",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
     }
 }

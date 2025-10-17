@@ -48,6 +48,10 @@ fun EditarPerfilScreen(
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
 
+    LaunchedEffect(userId) {
+        viewModel.loadInitialProfile(userId)
+    }
+
     val picker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->

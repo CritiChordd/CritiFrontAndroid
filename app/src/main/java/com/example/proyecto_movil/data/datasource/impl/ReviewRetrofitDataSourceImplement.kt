@@ -38,10 +38,9 @@ class ReviewRetrofitDataSourceImplement @Inject constructor(
     override suspend fun getReviewReplies(id: String): List<ReviewDto> =
         service.getReviewReplies(id)
 
-    override suspend fun sendOrDeleteLike(reviewId: String, liked: Boolean) {
-        // si más adelante agregas like/unlike en el backend, conéctalo aquí
-        throw UnsupportedOperationException("Not implemented for Retrofit yet")
-    }
 
     override fun listenAllReviews(): Flow<List<ReviewInfo>> = emptyFlow()
+    override suspend fun sendOrDeleteReviewLike(reviewId: String, userId: String) {
+        TODO("Not yet implemented")
+    }
 }
