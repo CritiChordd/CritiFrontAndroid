@@ -44,7 +44,8 @@ import coil.compose.AsyncImage
 @Composable
 fun NotificationsScreen(
     onBackClick: () -> Unit = {},
-    state: NotificationsState = NotificationsState()
+    state: NotificationsState = NotificationsState(),
+    onNotificationUserClick: (String) -> Unit = {}
 ) {
     val isDark = isSystemInDarkTheme()
     val backgroundRes = if (isDark) R.drawable.fondocriti else R.drawable.fondocriti_light
@@ -109,7 +110,10 @@ fun NotificationsScreen(
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             items(state.items, key = { notification -> notification.id }) { notification ->
-                                NotificationItem(notification = notification)
+                                NotificationItem(
+                                    notification = notification,
+                                    onUserClick = onNotificationUserClick
+                                )
                             }
                         }
                     }
@@ -120,12 +124,19 @@ fun NotificationsScreen(
 }
 
 @Composable
-private fun NotificationItem(notification: NotificationInfo) {
+private fun NotificationItem(
+    notification: NotificationInfo,
+    onUserClick: (String) -> Unit
+) {
     val actorName = notification.actorName?.takeIf { it.isNotBlank() }
         ?: notification.likerName?.takeIf { it.isNotBlank() }
         ?: "Alguien"
     val avatarUrl = notification.actorImageUrl?.takeIf { it.isNotBlank() }
         ?: "https://placehold.co/100x100"
+
+    val userId = notification.actorId?.takeIf { it.isNotBlank() }
+        ?: notification.likerId?.takeIf { it.isNotBlank() }
+        ?: ""
 
     val message = notification.message?.takeIf { it.isNotBlank() } ?: when (notification.type) {
         "review_like" -> {
@@ -143,7 +154,13 @@ private fun NotificationItem(notification: NotificationInfo) {
         modifier = Modifier
             .fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+        onClick = {
+            if (userId.isNotBlank()) {
+                onUserClick(userId)
+            }
+        },
+        enabled = userId.isNotBlank()
     ) {
         Row(
             modifier = Modifier
