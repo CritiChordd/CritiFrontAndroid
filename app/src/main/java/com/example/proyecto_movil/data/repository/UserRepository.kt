@@ -82,4 +82,31 @@ class UserRepository(
             Result.failure(e)
         }
     }
+
+    suspend fun isFollowing(currentUserId: String, targetUserId: String): Result<Boolean> =
+        withContext(Dispatchers.IO) {
+            try {
+                Result.success(userFirestoreDataSource.isFollowing(currentUserId, targetUserId))
+            } catch (e: Throwable) {
+                Result.failure(e)
+            }
+        }
+
+    suspend fun followUser(currentUserId: String, targetUserId: String): Result<UserInfo> =
+        withContext(Dispatchers.IO) {
+            try {
+                Result.success(userFirestoreDataSource.followUser(currentUserId, targetUserId))
+            } catch (e: Throwable) {
+                Result.failure(e)
+            }
+        }
+
+    suspend fun unfollowUser(currentUserId: String, targetUserId: String): Result<UserInfo> =
+        withContext(Dispatchers.IO) {
+            try {
+                Result.success(userFirestoreDataSource.unfollowUser(currentUserId, targetUserId))
+            } catch (e: Throwable) {
+                Result.failure(e)
+            }
+        }
 }

@@ -10,5 +10,12 @@ class NotificationsRepository @Inject constructor(
 ) {
     fun listenUserNotifications(userId: String): Flow<List<NotificationInfo>> =
         ds.listenUserNotifications(userId)
+
+    suspend fun addFollowNotification(
+        userId: String,
+        followerId: String,
+        followerName: String,
+        followerAvatarUrl: String
+    ) = ds.addFollowNotification(userId, followerId, followerName, followerAvatarUrl)
 }
 

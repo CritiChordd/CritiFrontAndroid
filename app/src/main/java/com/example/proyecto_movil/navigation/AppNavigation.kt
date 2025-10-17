@@ -201,6 +201,7 @@ fun AppNavHost(
                                 navController.navigate(Screen.Profile.createRoute(targetUid))
                             }
                         },
+                        onToggleFollow = vm::onFollowClicked
                     )
                 }
                 else -> SimpleError(state.errorMessage ?: "Usuario no encontrado")

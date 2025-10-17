@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -54,7 +55,8 @@ fun UserProfileScreen(
     onReviewProfileImageClicked: (String) -> Unit,
     onEditProfile: () -> Unit = {},
     onAlbumSelected: (Int) -> Unit = {},
-    onReviewSelected: (String) -> Unit = {}
+    onReviewSelected: (String) -> Unit = {},
+    onToggleFollow: () -> Unit = {}
 ) {
     val isDark = isSystemInDarkTheme()
     val backgroundRes = if (isDark) R.drawable.fondocriti else R.drawable.fondocriti_light
@@ -154,6 +156,46 @@ fun UserProfileScreen(
                                 )
                             ) {
                                 Text("Editar perfil")
+                            }
+                        } else if (state.canFollow) {
+                            when {
+                                !state.followStatusKnown -> {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(24.dp),
+                                        strokeWidth = 2.dp,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+
+                                state.isFollowing -> {
+                                    OutlinedButton(
+                                        onClick = onToggleFollow,
+                                        enabled = !state.isFollowActionInProgress,
+                                        shape = RoundedCornerShape(50),
+                                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+                                        colors = ButtonDefaults.outlinedButtonColors(
+                                            contentColor = MaterialTheme.colorScheme.primary
+                                        )
+                                    ) {
+                                        Text(
+                                            if (state.isFollowActionInProgress) "Actualizando..." else "Dejar de seguir"
+                                        )
+                                    }
+                                }
+
+                                else -> {
+                                    Button(
+                                        onClick = onToggleFollow,
+                                        enabled = !state.isFollowActionInProgress,
+                                        shape = RoundedCornerShape(50),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = MaterialTheme.colorScheme.primary,
+                                            contentColor = MaterialTheme.colorScheme.onPrimary
+                                        )
+                                    ) {
+                                        Text(if (state.isFollowActionInProgress) "Actualizando..." else "Seguir")
+                                    }
+                                }
                             }
                         }
 
