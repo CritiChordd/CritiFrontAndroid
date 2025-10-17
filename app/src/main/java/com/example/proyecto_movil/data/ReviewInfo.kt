@@ -8,9 +8,11 @@ data class ReviewInfo(
     val isLowScore: Boolean = false,
     val albumId: Int = 0,
     val userId: String = "",
+    val likes: Int = 0,
     val firebaseUserId: String? = null,
     val createdAt: String = "",
     val updatedAt: String = "",
     val liked: Boolean = false,
+    val likesCount: Int = 0,
     val isFavorite: Boolean = false
 )

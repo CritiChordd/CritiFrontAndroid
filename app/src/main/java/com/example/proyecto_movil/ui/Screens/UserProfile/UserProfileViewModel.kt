@@ -5,8 +5,11 @@ import androidx.lifecycle.viewModelScope
 import com.example.proyecto_movil.data.AlbumInfo
 import com.example.proyecto_movil.data.ReviewInfo
 import com.example.proyecto_movil.data.repository.AlbumRepository
+import com.example.proyecto_movil.data.UserInfo
+import com.example.proyecto_movil.data.repository.NotificationsRepository
 import com.example.proyecto_movil.data.repository.ReviewRepository
 import com.example.proyecto_movil.data.repository.UserRepository
+import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -21,7 +24,9 @@ import javax.inject.Inject
 class UserProfileViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val reviewRepository: ReviewRepository,
-    private val albumRepository: AlbumRepository
+    private val albumRepository: AlbumRepository,
+    private val notificationsRepository: NotificationsRepository,
+    private val auth: FirebaseAuth
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(UserProfileState())
@@ -29,6 +34,7 @@ class UserProfileViewModel @Inject constructor(
 
     // Lo llama tu Screen
     private var lastRequestedUserId: String? = null
+    private var cachedCurrentUser: UserInfo? = null
 
     fun setInitialData(userId: String) {
         val alreadyLoaded = lastRequestedUserId == userId && uiState.value.user != null
@@ -40,13 +46,39 @@ class UserProfileViewModel @Inject constructor(
 
     fun loadUser(userId: String) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            _uiState.update {
+                it.copy(
+                    isLoading = true,
+                    errorMessage = null,
+                    isFollowActionInProgress = false,
+                    followStatusKnown = false
+                )
+            }
             val userResult = userRepository.getUserById(userId)
             val user = userResult.getOrElse { error ->
                 _uiState.update {
                     it.copy(isLoading = false, errorMessage = error.message ?: "Error cargando usuario")
                 }
                 return@launch
+            }
+
+            val currentUid = auth.currentUser?.uid
+            val canFollow = currentUid != null && currentUid != userId
+            var isFollowing = false
+            var followStatusKnown = false
+
+            if (canFollow && currentUid != null) {
+                val followResult = userRepository.isFollowing(currentUid, userId)
+                followResult.onSuccess {
+                    isFollowing = it
+                    followStatusKnown = true
+                }.onFailure {
+                    followStatusKnown = true
+                }
+
+                if (cachedCurrentUser == null) {
+                    cachedCurrentUser = userRepository.getUserById(currentUid).getOrNull()
+                }
             }
 
             val reviewsResult = reviewRepository.getReviewsByUserId(userId)
@@ -79,7 +111,10 @@ class UserProfileViewModel @Inject constructor(
                     reviews = reviews,
                     reviewItems = reviewItems,
                     favoriteAlbums = favoriteAlbums,
-                    openReviewId = null
+                    openReviewId = null,
+                    canFollow = canFollow,
+                    isFollowing = isFollowing,
+                    followStatusKnown = if (canFollow) followStatusKnown else false
                 )
             }
         }
@@ -130,4 +165,63 @@ class UserProfileViewModel @Inject constructor(
 
     fun onReviewClicked(id: String)   = _uiState.update { it.copy(openReviewId = id) }
     fun consumeOpenReview()           = _uiState.update { it.copy(openReviewId = null) }
+
+    fun onFollowClicked() {
+        val state = uiState.value
+        val targetUser = state.user ?: return
+        val currentUid = auth.currentUser?.uid ?: return
+        if (currentUid == targetUser.id) return
+        if (!state.canFollow) return
+
+        val currentlyFollowing = state.isFollowing
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isFollowActionInProgress = true) }
+
+            val result = if (currentlyFollowing) {
+                userRepository.unfollowUser(currentUid, targetUser.id)
+            } else {
+                userRepository.followUser(currentUid, targetUser.id)
+            }
+
+            result.onSuccess { updatedUser ->
+                _uiState.update {
+                    it.copy(
+                        user = updatedUser,
+                        isFollowing = !currentlyFollowing,
+                        isFollowActionInProgress = false,
+                        followStatusKnown = true
+                    )
+                }
+
+                if (!currentlyFollowing) {
+                    val followerInfo = ensureCurrentUserInfo(currentUid)
+                    followerInfo?.let { info ->
+                        runCatching {
+                            notificationsRepository.addFollowNotification(
+                                userId = targetUser.id,
+                                followerId = info.id,
+                                followerName = info.username.ifBlank { info.name },
+                                followerAvatarUrl = info.profileImageUrl
+                            )
+                        }
+                    }
+                }
+            }.onFailure { error ->
+                _uiState.update {
+                    it.copy(
+                        isFollowActionInProgress = false,
+                        errorMessage = error.message ?: "Error actualizando seguimiento"
+                    )
+                }
+            }
+        }
+    }
+
+    private suspend fun ensureCurrentUserInfo(currentUid: String): UserInfo? {
+        cachedCurrentUser?.let { return it }
+        val info = userRepository.getUserById(currentUid).getOrNull()
+        cachedCurrentUser = info
+        return info
+    }
 }

@@ -1,5 +1,6 @@
 package com.example.proyecto_movil.data.datasource
 
+import androidx.privacysandbox.ads.adservices.adid.AdId
 import com.example.proyecto_movil.data.ReviewInfo
 import com.example.proyecto_movil.data.dtos.CreateReviewDto
 import com.example.proyecto_movil.data.dtos.ReviewDto
@@ -23,7 +24,9 @@ interface ReviewRemoteDataSource {
 
   suspend fun getReviewReplies(id: String): List<ReviewDto>
 
-  suspend fun sendOrDeleteLike(reviewId: String, liked: Boolean)
 
   fun listenAllReviews(): Flow<List<ReviewInfo>>
+  suspend fun sendOrDeleteReviewLike(reviewId: String, userId: String): Unit
+
+
 }

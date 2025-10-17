@@ -6,6 +6,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
+import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -62,6 +63,16 @@ class RegisterViewModel @Inject constructor(
                 firestore.collection("users").document(uid)
                     .set(data, SetOptions.merge())
                     .await()
+
+                // 2.1) Obtener y persistir el token FCM del usuario recién creado
+                runCatching {
+                    val token = FirebaseMessaging.getInstance().token.await()
+                    if (!token.isNullOrBlank()) {
+                        firestore.collection("users").document(uid)
+                            .update(mapOf("fcmToken" to token))
+                            .await()
+                    }
+                }
 
                 // 3) Mensaje + navegación a Login
                 _uiState.update {

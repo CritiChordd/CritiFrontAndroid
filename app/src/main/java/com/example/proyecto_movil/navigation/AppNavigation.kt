@@ -201,6 +201,7 @@ fun AppNavHost(
                                 navController.navigate(Screen.Profile.createRoute(targetUid))
                             }
                         },
+                        onToggleFollow = vm::onFollowClicked
                     )
                 }
                 else -> SimpleError(state.errorMessage ?: "Usuario no encontrado")
@@ -243,26 +244,32 @@ fun AppNavHost(
         ) { backStackEntry ->
             val encodedId = backStackEntry.arguments?.getString("reviewId") ?: return@composable
             val reviewId = Uri.decode(encodedId)
+
+            // ViewModel
             val vm: ReviewDetailViewModel = hiltViewModel()
             val state = vm.uiState.collectAsState().value
 
-            LaunchedEffect(reviewId) { vm.load(reviewId) }
+            // 🔹 Nuevo: obtenemos el UID del usuario actual
+            val userId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
+
+            // 🔹 Cargamos los datos con el userId
+            LaunchedEffect(reviewId, userId) {
+                if (userId.isNotBlank()) vm.load(reviewId, userId)
+            }
 
             when {
                 state.isLoading -> SimpleLoading()
                 state.errorMessage != null -> {
-                    LaunchedEffect(state.errorMessage) {
-                        vm.consumeError()
-                        navController.popBackStack()
-                    }
                     SimpleError(state.errorMessage)
                 }
                 state.review != null -> {
                     val author = state.author
                     val album = state.album
+
                     val username = author?.username?.takeIf { it.isNotBlank() }
                         ?: author?.name
                         ?: "Usuario"
+
                     val avatarUrl = author?.profileImageUrl ?: ""
                     val albumTitle = album?.title ?: ""
                     val coverUrl = album?.coverUrl ?: ""
@@ -277,6 +284,12 @@ fun AppNavHost(
                         albumCoverUrl = coverUrl,
                         artistName = artistName,
                         albumYear = albumYear,
+
+                        // 🔹 Nuevos parámetros obligatorios:
+                        liked = state.review.liked,
+                        likesCount = state.review.likesCount,
+                        onToggleLike = { vm.toggleLike() },
+
                         onBack = { navController.popBackStack() }
                     )
                 }
@@ -286,8 +299,16 @@ fun AppNavHost(
 
         /* NOTIFICATIONS */
         composable(Screen.Notifications.route) {
-            NotificationsScreen(
-                onBackClick = { navController.navigateUp() }
+            val vm: com.example.proyecto_movil.ui.Screens.Notifications.NotificationsViewModel = hiltViewModel()
+            val state = vm.uiState.collectAsState().value
+            com.example.proyecto_movil.ui.Screens.Notifications.NotificationsScreen(
+                onBackClick = { navController.navigateUp() },
+                state = state,
+                onNotificationUserClick = { userId ->
+                    if (userId.isNotBlank()) {
+                        navController.navigate(Screen.Profile.createRoute(userId))
+                    }
+                }
             )
         }
 

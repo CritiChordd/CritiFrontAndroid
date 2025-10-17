@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.FieldValue
 
 class ReviewFirestoreDataSourceImpl @Inject constructor(
     private val db: FirebaseFirestore
@@ -130,9 +131,18 @@ class ReviewFirestoreDataSourceImpl @Inject constructor(
         }
     }
 
-    override suspend fun sendOrDeleteLike(reviewId: String, liked: Boolean) {
-        
+    override suspend fun sendOrDeleteReviewLike(reviewId: String, userId: String) {
+        val reviewRef = db.collection("reviews").document(reviewId)
+        val likeRef = reviewRef.collection("likes").document(userId)
+
+        val likeDoc = likeRef.get().await()
+        if (likeDoc.exists()) {
+            likeRef.delete().await()
+        } else {
+            likeRef.set(mapOf("timestamp" to FieldValue.serverTimestamp())).await()
+        }
     }
+
 
     private fun DocumentSnapshot.toReviewDtoOrNull(): ReviewDto? {
         val base = this.toObject(ReviewDto::class.java) ?: return null
@@ -151,13 +161,22 @@ class ReviewFirestoreDataSourceImpl @Inject constructor(
 
         val resolvedCreatedAt = base.createdAt.takeIf { it.isNotBlank() }
             ?: data["createdAt"]?.toString().orEmpty()
+
         val resolvedUpdatedAt = base.updatedAt.takeIf { it.isNotBlank() }
             ?: data["updatedAt"]?.toString().orEmpty()
+
         val resolvedFavorite = when (val rawFavorite = data["is_favorite"]) {
             is Boolean -> rawFavorite
             is Number -> rawFavorite.toInt() != 0
             is String -> rawFavorite.equals("true", ignoreCase = true) || rawFavorite == "1"
             else -> base.is_favorite
+        }
+
+        // 👇 Agrega este bloque antes del return
+        val resolvedLikesCount = when (val raw = data["likesCount"]) {
+            is Number -> raw.toInt()
+            is String -> raw.toIntOrNull() ?: 0
+            else -> base.likesCount // usa el valor por defecto del DTO si no existe
         }
 
         return base.copy(
@@ -167,7 +186,9 @@ class ReviewFirestoreDataSourceImpl @Inject constructor(
             firebase_user_id = resolvedFirebaseId,
             createdAt = resolvedCreatedAt,
             updatedAt = resolvedUpdatedAt,
-            is_favorite = resolvedFavorite
+            is_favorite = resolvedFavorite,
+            likesCount = resolvedLikesCount // 👈 ahora sí existe
         )
     }
+
 }

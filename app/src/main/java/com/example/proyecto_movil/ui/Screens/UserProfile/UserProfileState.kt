@@ -11,6 +11,10 @@ data class UserProfileState(
     val reviewItems: List<UserReviewUi> = emptyList(),
     val favoriteAlbums: List<AlbumInfo> = emptyList(),
     val errorMessage: String? = null,
+    val canFollow: Boolean = false,
+    val isFollowing: Boolean = false,
+    val followStatusKnown: Boolean = false,
+    val isFollowActionInProgress: Boolean = false,
 
     // Nombres que Screen espera
     val navigateBack: Boolean = false,

@@ -6,9 +6,11 @@ import com.example.proyecto_movil.data.datasource.ReviewRemoteDataSource
 import com.example.proyecto_movil.data.datasource.impl.firestore.AlbumFirestoreDataSourceImpl
 import com.example.proyecto_movil.data.datasource.impl.firestore.ReviewFirestoreDataSourceImpl
 import com.example.proyecto_movil.data.datasource.impl.firestore.UserFirestoreDataSourceImpl
+import com.example.proyecto_movil.data.datasource.impl.firestore.NotificationsFirestoreDataSourceImpl
 import com.example.proyecto_movil.data.datasource.impl.retrofit.*
 import com.example.proyecto_movil.data.datasource.services.*
 import com.example.proyecto_movil.data.repository.*
+import com.example.proyecto_movil.data.datasource.NotificationsRemoteDataSource
 
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
@@ -99,6 +101,17 @@ object AppModule {
 
     @Singleton
     @Provides
+    fun provideNotificationsFirestoreDS(firestore: FirebaseFirestore) =
+        NotificationsFirestoreDataSourceImpl(firestore)
+
+    @Singleton
+    @Provides
+    fun provideNotificationsRemoteDataSource(
+        firestoreDS: NotificationsFirestoreDataSourceImpl
+    ): NotificationsRemoteDataSource = firestoreDS
+
+    @Singleton
+    @Provides
     fun provideAlbumFirestoreDataSource(
         firestore: FirebaseFirestore
     ): AlbumFirestoreDataSourceImpl = AlbumFirestoreDataSourceImpl(firestore)
@@ -130,4 +143,7 @@ object AppModule {
 
     @Singleton @Provides
     fun provideStorageRepository(storage: FirebaseStorage) = StorageRepository(storage)
+
+    @Singleton @Provides
+    fun provideNotificationsRepository(ds: NotificationsRemoteDataSource) = NotificationsRepository(ds)
 }
