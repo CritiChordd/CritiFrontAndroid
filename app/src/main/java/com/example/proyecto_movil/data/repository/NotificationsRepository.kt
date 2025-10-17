@@ -17,5 +17,12 @@ class NotificationsRepository @Inject constructor(
         followerName: String,
         followerAvatarUrl: String
     ) = ds.addFollowNotification(userId, followerId, followerName, followerAvatarUrl)
-}
 
+    suspend fun addLikeNotification(
+        userId: String,
+        reviewId: String,
+        likerId: String,
+        likerName: String,
+        reviewSnippet: String?
+    ) = ds.addLikeNotification(userId, reviewId, likerId, likerName, reviewSnippet)
+}

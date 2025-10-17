@@ -23,7 +23,8 @@ class ReviewDetailViewModel @Inject constructor(
     private val reviewRepository: ReviewRepository,
     private val userRepository: UserRepository,
     private val albumRepository: AlbumRepository,
-    private val firestore: FirebaseFirestore
+    private val firestore: FirebaseFirestore,
+    private val notificationsRepository: com.example.proyecto_movil.data.repository.NotificationsRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ReviewDetailState())
@@ -47,8 +48,10 @@ class ReviewDetailViewModel @Inject constructor(
                 Log.e(TAG, "getReviewById error: ${reviewRes.exceptionOrNull()}")
             }
 
-            // 2?? Cargar autor
-            val authorId = _uiState.value.review?.userId.orEmpty()
+            // 2) Cargar autor (preferir firebaseUserId)
+            val authorId = _uiState.value.review?.firebaseUserId
+                ?: _uiState.value.review?.userId
+                ?: ""
             if (authorId.isNotBlank()) {
                 val authorRes = userRepository.getUserById(authorId)
                 _uiState.update { s -> s.copy(author = authorRes.getOrNull()) }
@@ -116,6 +119,34 @@ class ReviewDetailViewModel @Inject constructor(
                         likes = (st.likes - delta).coerceAtLeast(0),
                         review = r?.copy(liked = wasLiked, likesCount = (r?.likesCount ?: 0) - delta)
                     )
+                }
+            } ?: run {
+                // En caso de LIKE (no UNLIKE), crear notificación como con 'seguir'
+                if (!wasLiked) {
+                    val st = _uiState.value
+                    val review = st.review
+                    val authorUid = review?.firebaseUserId ?: review?.userId.orEmpty()
+                    val isSelf = authorUid.isNotBlank() && authorUid == userId
+                    if (review != null && authorUid.isNotBlank() && !isSelf) {
+                        // Obtener nombre del que dio like
+                        val likerName = runCatching {
+                            userRepository.getUserById(userId).getOrNull()?.let { info ->
+                                info.username.takeIf { it.isNotBlank() } ?: info.name
+                            }
+                        }.getOrNull() ?: "Alguien"
+
+                        val snippet = review.content.takeIf { it.isNotBlank() }?.let { it.take(80) }
+
+                        runCatching {
+                            notificationsRepository.addLikeNotification(
+                                userId = authorUid,
+                                reviewId = review.id,
+                                likerId = userId,
+                                likerName = likerName,
+                                reviewSnippet = snippet
+                            )
+                        }
+                    }
                 }
             }
         }
