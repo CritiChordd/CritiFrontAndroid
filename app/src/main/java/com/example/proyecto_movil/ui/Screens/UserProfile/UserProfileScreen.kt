@@ -122,9 +122,9 @@ fun UserProfileScreen(
                         // ---------- Header: usa datos de 'user' (NO del state) ----------
                         val avatar: String = user.avatarUrl.ifEmpty { "https://placehold.co/120x120" }
                         val displayName = remember(user) {
-                            user.username.ifBlank {
-                                user.id.takeIf { it.isNotBlank() } ?: "Usuario"
-                            }
+                            sequenceOf(user.name, user.username, user.id)
+                                .firstOrNull { it.isNotBlank() }
+                                ?: "Usuario"
                         }
                         AsyncImage(
                             model = avatar,
