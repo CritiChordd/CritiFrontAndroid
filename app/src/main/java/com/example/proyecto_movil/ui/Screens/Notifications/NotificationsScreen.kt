@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -68,33 +70,47 @@ fun NotificationsScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
-                    .padding(horizontal = 24.dp, vertical = 32.dp),
-                contentAlignment = Alignment.Center
+                    .padding(horizontal = 24.dp, vertical = 32.dp)
             ) {
-                if (state.items.isEmpty()) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Text(
-                            text = "Ahora no tienes notificaciones",
-                            style = MaterialTheme.typography.titleMedium,
-                            textAlign = TextAlign.Center,
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
-                        Text(
-                            text = "Cuando otros usuarios sigan tu perfil o reaccionen a tus reseñas, las verás aquí.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            textAlign = TextAlign.Center,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                when {
+                    state.isLoading -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            androidx.compose.material3.CircularProgressIndicator()
+                        }
                     }
-                } else {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        state.items.forEach { notification ->
-                            NotificationItem(notification = notification)
+
+                    state.items.isEmpty() -> {
+                        Column(
+                            modifier = Modifier.fillMaxSize(),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = "Ahora no tienes notificaciones",
+                                style = MaterialTheme.typography.titleMedium,
+                                textAlign = TextAlign.Center,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                            Text(
+                                text = "Cuando otros usuarios sigan tu perfil o reaccionen a tus reseñas, las verás aquí.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                textAlign = TextAlign.Center,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    else -> {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            items(state.items, key = { notification -> notification.id }) { notification ->
+                                NotificationItem(notification = notification)
+                            }
                         }
                     }
                 }

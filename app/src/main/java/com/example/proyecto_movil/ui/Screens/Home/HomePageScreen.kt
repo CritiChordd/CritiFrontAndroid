@@ -23,11 +23,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import coil.compose.AsyncImage
 import com.example.proyecto_movil.R
 import com.example.proyecto_movil.data.AlbumInfo
@@ -133,6 +137,18 @@ private fun SearchSection(
     onUserClick: (UserInfo) -> Unit,
     onNotificationsClick: () -> Unit
 ) {
+    val focusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    LaunchedEffect(isSearchActive) {
+        if (isSearchActive) {
+            focusRequester.requestFocus()
+            keyboardController?.show()
+        } else {
+            keyboardController?.hide()
+        }
+    }
+
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -170,7 +186,9 @@ private fun SearchSection(
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = onQueryChange,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(focusRequester),
                 label = { Text("Buscar por nombre o usuario") },
                 trailingIcon = {
                     if (searchQuery.isNotBlank()) {

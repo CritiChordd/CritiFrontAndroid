@@ -81,7 +81,9 @@ class UserFirestoreDataSourceImpl(
             "usernameLowercase" to username.lowercase(),
             "nameLowercase" to resolvedName.lowercase(),
             "followers" to 0,
-            "following" to 0
+            "followersCount" to 0,
+            "following" to 0,
+            "followingCount" to 0
         )
         collection.document(id).set(doc).await()
     }
@@ -144,8 +146,20 @@ class UserFirestoreDataSourceImpl(
                         "createdAt" to FieldValue.serverTimestamp()
                     )
                 )
-                tx.update(currentDoc, "following", FieldValue.increment(1))
-                tx.update(targetDoc, "followers", FieldValue.increment(1))
+                tx.update(
+                    currentDoc,
+                    mapOf(
+                        "following" to FieldValue.increment(1),
+                        "followingCount" to FieldValue.increment(1)
+                    )
+                )
+                tx.update(
+                    targetDoc,
+                    mapOf(
+                        "followers" to FieldValue.increment(1),
+                        "followersCount" to FieldValue.increment(1)
+                    )
+                )
             }
             null
         }.await()
@@ -168,8 +182,20 @@ class UserFirestoreDataSourceImpl(
             if (isFollowing) {
                 tx.delete(followingDoc)
                 tx.delete(followerDoc)
-                tx.update(currentDoc, "following", FieldValue.increment(-1))
-                tx.update(targetDoc, "followers", FieldValue.increment(-1))
+                tx.update(
+                    currentDoc,
+                    mapOf(
+                        "following" to FieldValue.increment(-1),
+                        "followingCount" to FieldValue.increment(-1)
+                    )
+                )
+                tx.update(
+                    targetDoc,
+                    mapOf(
+                        "followers" to FieldValue.increment(-1),
+                        "followersCount" to FieldValue.increment(-1)
+                    )
+                )
             }
             null
         }.await()
@@ -212,8 +238,16 @@ class UserFirestoreDataSourceImpl(
             username = resolvedUsername,
             profileImageUrl = resolvedAvatar?.toString().orEmpty(),
             bio = this["bio"]?.toString().orEmpty(),
-            followers = (this["followers"] as? Number)?.toInt() ?: 0,
-            following = (this["following"] as? Number)?.toInt() ?: 0,
+            followers = sequenceOf(
+                this["followers"],
+                this["followersCount"],
+                this["followers_count"],
+            ).mapNotNull { (it as? Number)?.toInt() }.firstOrNull() ?: 0,
+            following = sequenceOf(
+                this["following"],
+                this["followingCount"],
+                this["following_count"],
+            ).mapNotNull { (it as? Number)?.toInt() }.firstOrNull() ?: 0,
             playlists = emptyList(),
             backendUserId = backendId
         )
