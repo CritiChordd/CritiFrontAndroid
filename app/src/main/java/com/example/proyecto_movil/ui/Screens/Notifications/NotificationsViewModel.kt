@@ -12,11 +12,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.example.proyecto_movil.ui.Screens.Notifications.NotificationsState
 
-data class NotificationsState(
+/*data class NotificationsState(
     val isLoading: Boolean = true,
     val items: List<NotificationInfo> = emptyList(),
-)
+)*/
 
 @HiltViewModel
 class NotificationsViewModel @Inject constructor(
