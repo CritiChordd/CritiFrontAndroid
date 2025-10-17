@@ -3,9 +3,11 @@ package com.example.proyecto_movil.ui.Screens.ReviewDetail
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.proyecto_movil.data.UserInfo
 import com.example.proyecto_movil.data.repository.AlbumRepository
 import com.example.proyecto_movil.data.repository.ReviewRepository
 import com.example.proyecto_movil.data.repository.UserRepository
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,6 +34,7 @@ class ReviewDetailViewModel @Inject constructor(
 
     private var currentReviewId: String = ""
     private var currentUserId: String = ""
+    private var cachedCurrentUserInfo: UserInfo? = null
 
     fun load(reviewId: String, userId: String) {
         currentReviewId = reviewId
@@ -129,11 +132,27 @@ class ReviewDetailViewModel @Inject constructor(
                     val isSelf = authorUid.isNotBlank() && authorUid == userId
                     if (review != null && authorUid.isNotBlank() && !isSelf) {
                         // Obtener nombre del que dio like
-                        val likerName = runCatching {
-                            userRepository.getUserById(userId).getOrNull()?.let { info ->
-                                info.username.takeIf { it.isNotBlank() } ?: info.name
-                            }
-                        }.getOrNull() ?: "Alguien"
+                        val likerInfo = ensureCurrentUserInfo(userId)
+                        val firebaseUser = FirebaseAuth.getInstance().currentUser
+                            ?.takeIf { it.uid == userId }
+
+                        val likerName = sequenceOf(
+                            likerInfo?.username,
+                            likerInfo?.name,
+                            firebaseUser?.displayName,
+                            firebaseUser?.email?.substringBefore('@')
+                        )
+                            .mapNotNull { it?.takeIf { name -> name.isNotBlank() } }
+                            .firstOrNull()
+                            ?: "Alguien"
+
+                        val likerAvatarUrl = sequenceOf(
+                            likerInfo?.profileImageUrl,
+                            firebaseUser?.photoUrl?.toString()
+                        )
+                            .mapNotNull { it?.takeIf { url -> url.isNotBlank() } }
+                            .firstOrNull()
+                            .orEmpty()
 
                         val snippet = review.content.takeIf { it.isNotBlank() }?.let { it.take(80) }
 
@@ -143,6 +162,7 @@ class ReviewDetailViewModel @Inject constructor(
                                 reviewId = review.id,
                                 likerId = userId,
                                 likerName = likerName,
+                                likerAvatarUrl = likerAvatarUrl,
                                 reviewSnippet = snippet
                             )
                         }
@@ -150,5 +170,14 @@ class ReviewDetailViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    private suspend fun ensureCurrentUserInfo(userId: String): UserInfo? {
+        cachedCurrentUserInfo?.takeIf { it.id == userId }?.let { return it }
+        val info = userRepository.getUserById(userId).getOrNull()
+        if (info != null) {
+            cachedCurrentUserInfo = info
+        }
+        return info
     }
 }

@@ -18,6 +18,7 @@ interface NotificationsRemoteDataSource {
         reviewId: String,
         likerId: String,
         likerName: String,
+        likerAvatarUrl: String,
         reviewSnippet: String?
     )
 }

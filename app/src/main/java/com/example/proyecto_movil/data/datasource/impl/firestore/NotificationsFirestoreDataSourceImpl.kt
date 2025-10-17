@@ -38,6 +38,7 @@ class NotificationsFirestoreDataSourceImpl(
                     reviewId = data["reviewId"]?.toString(),
                     likerId = data["likerId"]?.toString(),
                     likerName = data["likerName"]?.toString(),
+                    likerAvatarUrl = data["likerAvatarUrl"]?.toString(),
                     reviewSnippet = data["reviewSnippet"]?.toString(),
                     actorId = data["actorId"]?.toString(),
                     actorName = data["actorName"]?.toString(),
@@ -84,6 +85,7 @@ class NotificationsFirestoreDataSourceImpl(
         reviewId: String,
         likerId: String,
         likerName: String,
+        likerAvatarUrl: String,
         reviewSnippet: String?
     ) {
         if (userId.isBlank() || reviewId.isBlank() || likerId.isBlank()) return
@@ -91,13 +93,17 @@ class NotificationsFirestoreDataSourceImpl(
         val notificationRef = db.collection("users")
             .document(userId)
             .collection("notifications")
-            .document("like_${'$'}reviewId_${'$'}likerId")
+            .document("like_${reviewId}_${likerId}")
 
         val data = mapOf(
             "type" to "review_like",
             "reviewId" to reviewId,
             "likerId" to likerId,
             "likerName" to likerName,
+            "likerAvatarUrl" to likerAvatarUrl,
+            "actorId" to likerId,
+            "actorName" to likerName,
+            "actorImageUrl" to likerAvatarUrl,
             "reviewSnippet" to (reviewSnippet ?: ""),
             "createdAt" to FieldValue.serverTimestamp(),
             "read" to false,
