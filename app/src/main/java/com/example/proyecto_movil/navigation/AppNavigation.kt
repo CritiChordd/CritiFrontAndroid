@@ -49,6 +49,9 @@ import com.example.proyecto_movil.ui.utils.ReviewDetailScreen
 import com.google.firebase.auth.FirebaseAuth
 import com.example.proyecto_movil.ui.Screens.FollowList.FollowListViewModel
 import com.example.proyecto_movil.ui.Screens.FollowList.FollowListScreen
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.proyecto_movil.ui.Screens.FollowingFeed.FollowingFeedScreen
+import com.example.proyecto_movil.ui.Screens.FollowingFeed.FollowingFeedViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -126,15 +129,10 @@ fun AppNavHost(
             val vm: HomeViewModel = hiltViewModel()
             HomeScreen(
                 viewModel = vm,
-                onAlbumClick = { album: AlbumInfo ->
-                    navController.navigate(Screen.Album.createRoute(album.id))
-                },
-                onReviewProfileImageClicked = { uid: String ->
-                    navController.navigate(Screen.Profile.createRoute(uid))
-                },
-                onNotificationsClick = {
-                    navController.navigate(Screen.Notifications.route)
-                }
+                onAlbumClick = { album -> navController.navigate(Screen.Album.createRoute(album.id)) },
+                onReviewProfileImageClicked = { uid -> navController.navigate(Screen.Profile.createRoute(uid)) },
+                onNotificationsClick = { navController.navigate(Screen.Notifications.route) },
+                onFollowingFeedClick = { navController.navigate(Screen.FollowingFeed.route) } // ← NUEVO
             )
         }
 
@@ -259,6 +257,20 @@ fun AppNavHost(
                 onUserClick = { targetUid ->
                     navController.navigate(Screen.Profile.createRoute(targetUid))
                 }
+            )
+        }
+        /* ------------------ FOLLOWING FEED ------------------ */
+        composable(Screen.FollowingFeed.route) {
+            val vm: FollowingFeedViewModel = hiltViewModel()
+            val state = vm.uiState.collectAsState()
+
+            LaunchedEffect(Unit) { vm.start() }
+
+            FollowingFeedScreen(
+                state = state.value,
+                onBack = { navController.navigateUp() },
+                onUserClick = { uid -> navController.navigate(Screen.Profile.createRoute(uid)) },
+                onOpenReview = { rid -> navController.navigate(Screen.ReviewDetail.createRoute(rid)) }
             )
         }
 

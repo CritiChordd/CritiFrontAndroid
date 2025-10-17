@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.People
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -27,17 +28,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.proyecto_movil.R
 import com.example.proyecto_movil.data.AlbumInfo
 import com.example.proyecto_movil.data.UserInfo
 import com.example.proyecto_movil.ui.Screens.Home.HomeViewModel
-import com.example.proyecto_movil.ui.theme.Proyecto_movilTheme
 import com.example.proyecto_movil.ui.utils.ScreenBackground
 import com.example.proyecto_movil.ui.utils.AlbumCard
 
@@ -47,7 +47,8 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     onAlbumClick: (AlbumInfo) -> Unit = {},
     onReviewProfileImageClicked: (String) -> Unit = {},
-    onNotificationsClick: () -> Unit = {}
+    onNotificationsClick: () -> Unit = {},
+    onFollowingFeedClick: () -> Unit = {}      // ← NUEVO
 ) {
     val state by viewModel.uiState.collectAsState()
 
@@ -73,7 +74,8 @@ fun HomeScreen(
                     onQueryChange = viewModel::onSearchQueryChanged,
                     onClearQuery = viewModel::clearSearch,
                     onUserClick = viewModel::onUserResultClicked,
-                    onNotificationsClick = onNotificationsClick
+                    onNotificationsClick = onNotificationsClick,
+                    onFollowingFeedClick = onFollowingFeedClick   // ← NUEVO
                 )
             }
 
@@ -106,7 +108,7 @@ fun HomeScreen(
         }
     }
 
-    // Efecto de navegación
+    // Efectos de navegación
     LaunchedEffect(state.openAlbum) {
         state.openAlbum?.let {
             onAlbumClick(it)
@@ -135,7 +137,8 @@ private fun SearchSection(
     onQueryChange: (String) -> Unit,
     onClearQuery: () -> Unit,
     onUserClick: (UserInfo) -> Unit,
-    onNotificationsClick: () -> Unit
+    onNotificationsClick: () -> Unit,
+    onFollowingFeedClick: () -> Unit       // ← NUEVO
 ) {
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -168,6 +171,13 @@ private fun SearchSection(
                         contentDescription = "Ver notificaciones"
                     )
                 }
+                // ← NUEVO: Botón para abrir el feed de seguidos
+                IconButton(onClick = onFollowingFeedClick) {
+                    Icon(
+                        imageVector = Icons.Filled.People,
+                        contentDescription = "Feed de seguidos"
+                    )
+                }
                 Text(
                     text = "Explora usuarios",
                     style = MaterialTheme.typography.headlineSmall,
@@ -193,7 +203,10 @@ private fun SearchSection(
                 trailingIcon = {
                     if (searchQuery.isNotBlank()) {
                         IconButton(onClick = onClearQuery) {
-                            Icon(imageVector = Icons.Filled.Close, contentDescription = "Limpiar búsqueda")
+                            Icon(
+                                imageVector = Icons.Filled.Close,
+                                contentDescription = "Limpiar búsqueda"
+                            )
                         }
                     }
                 },
@@ -216,7 +229,6 @@ private fun SearchSection(
                         }
                     }
                 }
-
                 errorMessage != null -> {
                     val isInfo = errorMessage.contains("No se encontraron", ignoreCase = true)
                     Text(

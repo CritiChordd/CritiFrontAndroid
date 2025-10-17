@@ -33,6 +33,8 @@ sealed class Screen(val route: String) {
     }
     object Notifications : Screen("notifications")
 
+    object FollowingFeed : Screen("followingFeed")
+
     object Followers : Screen("followers/{uid}") {
         fun createRoute(uid: String) = "followers/$uid"
     }
