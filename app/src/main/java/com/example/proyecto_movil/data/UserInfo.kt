@@ -10,10 +10,10 @@ import kotlinx.parcelize.Parcelize
 
 @Parcelize
 data class UserInfo(
-    val id: String,
-    val name: String,
-    val username: String,
-    val profileImageUrl: String,
+    val id: String = "",
+    val name: String = "",
+    val username: String = "",
+    val profileImageUrl: String = "",
     val bio: String = "",
     val followers: Int = 0,
     val following: Int = 0,
