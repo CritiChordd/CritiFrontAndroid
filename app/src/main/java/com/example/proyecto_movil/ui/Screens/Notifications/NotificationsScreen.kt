@@ -29,7 +29,8 @@ import com.example.proyecto_movil.ui.utils.ScreenBackground
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotificationsScreen(
-    onBackClick: () -> Unit = {}
+    onBackClick: () -> Unit = {},
+    state: NotificationsState = NotificationsState()
 ) {
     val isDark = isSystemInDarkTheme()
     val backgroundRes = if (isDark) R.drawable.fondocriti else R.drawable.fondocriti_light
@@ -58,22 +59,39 @@ fun NotificationsScreen(
                     .padding(horizontal = 24.dp, vertical = 32.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text(
-                        text = "Ahora no tienes notificaciones",
-                        style = MaterialTheme.typography.titleMedium,
-                        textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                    Text(
-                        text = "Cuando otros usuarios sigan tu perfil o reaccionen a tus reseñas, las verás aquí.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                if (state.items.isEmpty()) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            text = "Ahora no tienes notificaciones",
+                            style = MaterialTheme.typography.titleMedium,
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                        Text(
+                            text = "Cuando otros usuarios sigan tu perfil o reaccionen a tus reseñas, las verás aquí.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                } else {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        state.items.forEach { n ->
+                            Text(
+                                text = when (n.type) {
+                                    "review_like" -> "${n.likerName ?: "Alguien"} le dio like a tu reseña" + (n.reviewSnippet?.let { ": \"$it\"" } ?: "")
+                                    else -> n.type
+                                },
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -87,3 +105,4 @@ private fun NotificationsScreenPreview() {
         NotificationsScreen()
     }
 }
+

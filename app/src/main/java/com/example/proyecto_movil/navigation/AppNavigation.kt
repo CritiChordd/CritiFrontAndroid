@@ -298,8 +298,11 @@ fun AppNavHost(
 
         /* NOTIFICATIONS */
         composable(Screen.Notifications.route) {
-            NotificationsScreen(
-                onBackClick = { navController.navigateUp() }
+            val vm: com.example.proyecto_movil.ui.Screens.Notifications.NotificationsViewModel = hiltViewModel()
+            val state = vm.uiState.collectAsState().value
+            com.example.proyecto_movil.ui.Screens.Notifications.NotificationsScreen(
+                onBackClick = { navController.navigateUp() },
+                state = state
             )
         }
 

@@ -22,7 +22,7 @@ exports.sendLikeNotification = functions.firestore
     }
 
     const review = reviewDoc.data() || {};
-    const authorUid = review.firebase_user_id || null;
+    const authorUid = review.firebase_user_id || review.user_id || null;
     if (!authorUid) {
       console.log("La reseña no tiene firebase_user_id, no se envía notificación");
       return null;
@@ -34,14 +34,19 @@ exports.sendLikeNotification = functions.firestore
       return null;
     }
 
-    // Buscar token del autor
-    const userDoc = await admin.firestore().collection("users").doc(authorUid).get();
+    // Buscar token del autor y datos del liker
+    const [userDoc, likerDoc] = await Promise.all([
+      admin.firestore().collection("users").doc(authorUid).get(),
+      admin.firestore().collection("users").doc(likerId).get(),
+    ]);
     if (!userDoc.exists) {
       console.log("Usuario autor no encontrado:", authorUid);
       return null;
     }
 
     const token = userDoc.get("fcmToken");
+    const likerName = (likerDoc.exists && (likerDoc.get("name") || likerDoc.get("username"))) || "Alguien";
+    const reviewSnippet = (review.content || "").toString().slice(0, 50);
     if (!token) {
       console.log("Usuario sin fcmToken, no se envía notificación");
       return null;
@@ -51,12 +56,13 @@ exports.sendLikeNotification = functions.firestore
       token,
       notification: {
         title: "Nuevo Like",
-        body: "Alguien le ha dado like a tu reseña",
+        body: `${likerName} le dio like a tu reseña`,
       },
       data: {
         type: "review_like",
         reviewId: reviewId,
         likerId: likerId,
+        reviewSnippet: reviewSnippet,
       },
     };
 
@@ -66,7 +72,22 @@ exports.sendLikeNotification = functions.firestore
     } catch (err) {
       console.error("Error enviando notificación:", err);
     }
+    // Crear documento de notificación para listar en la app
+    try {
+      await admin.firestore()
+        .collection("users").doc(authorUid)
+        .collection("notifications").add({
+          type: "review_like",
+          reviewId: reviewId,
+          likerId: likerId,
+          likerName: likerName,
+          reviewSnippet: reviewSnippet,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          read: false,
+        });
+    } catch (err) {
+      console.error("Error creando documento de notificación:", err);
+    }
 
     return null;
   });
-
