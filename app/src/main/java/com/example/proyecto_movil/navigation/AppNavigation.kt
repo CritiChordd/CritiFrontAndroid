@@ -201,6 +201,7 @@ fun AppNavHost(
                                 navController.navigate(Screen.Profile.createRoute(targetUid))
                             }
                         },
+                        onToggleFollow = vm::onFollowClicked
                     )
                 }
                 else -> SimpleError(state.errorMessage ?: "Usuario no encontrado")
@@ -302,7 +303,12 @@ fun AppNavHost(
             val state = vm.uiState.collectAsState().value
             com.example.proyecto_movil.ui.Screens.Notifications.NotificationsScreen(
                 onBackClick = { navController.navigateUp() },
-                state = state
+                state = state,
+                onNotificationUserClick = { userId ->
+                    if (userId.isNotBlank()) {
+                        navController.navigate(Screen.Profile.createRoute(userId))
+                    }
+                }
             )
         }
 

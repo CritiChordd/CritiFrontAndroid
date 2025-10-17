@@ -5,5 +5,12 @@ import kotlinx.coroutines.flow.Flow
 
 interface NotificationsRemoteDataSource {
     fun listenUserNotifications(userId: String): Flow<List<NotificationInfo>>
+
+    suspend fun addFollowNotification(
+        userId: String,
+        followerId: String,
+        followerName: String,
+        followerAvatarUrl: String
+    )
 }
 

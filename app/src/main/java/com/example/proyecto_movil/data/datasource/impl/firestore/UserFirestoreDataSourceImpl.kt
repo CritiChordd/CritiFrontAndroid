@@ -1,6 +1,7 @@
 package com.example.proyecto_movil.data.datasource.impl.firestore
 
 import com.example.proyecto_movil.data.UserInfo
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
 
@@ -80,7 +81,9 @@ class UserFirestoreDataSourceImpl(
             "usernameLowercase" to username.lowercase(),
             "nameLowercase" to resolvedName.lowercase(),
             "followers" to 0,
-            "following" to 0
+            "followersCount" to 0,
+            "following" to 0,
+            "followingCount" to 0
         )
         collection.document(id).set(doc).await()
     }
@@ -101,6 +104,103 @@ class UserFirestoreDataSourceImpl(
 
         collection.document(id).update(updates).await()
         return getUserById(id)
+    }
+
+    suspend fun isFollowing(currentUserId: String, targetUserId: String): Boolean {
+        if (currentUserId.isBlank() || targetUserId.isBlank()) return false
+
+        val doc = collection
+            .document(currentUserId)
+            .collection("following")
+            .document(targetUserId)
+            .get()
+            .await()
+
+        return doc.exists()
+    }
+
+    suspend fun followUser(currentUserId: String, targetUserId: String): UserInfo {
+        if (currentUserId.isBlank() || targetUserId.isBlank() || currentUserId == targetUserId) {
+            return getUserById(targetUserId)
+        }
+
+        val currentDoc = collection.document(currentUserId)
+        val targetDoc = collection.document(targetUserId)
+        val followingDoc = currentDoc.collection("following").document(targetUserId)
+        val followerDoc = targetDoc.collection("followers").document(currentUserId)
+
+        db.runTransaction { tx ->
+            val alreadyFollowing = tx.get(followingDoc).exists()
+            if (!alreadyFollowing) {
+                tx.set(
+                    followingDoc,
+                    mapOf(
+                        "userId" to targetUserId,
+                        "createdAt" to FieldValue.serverTimestamp()
+                    )
+                )
+                tx.set(
+                    followerDoc,
+                    mapOf(
+                        "userId" to currentUserId,
+                        "createdAt" to FieldValue.serverTimestamp()
+                    )
+                )
+                tx.update(
+                    currentDoc,
+                    mapOf(
+                        "following" to FieldValue.increment(1),
+                        "followingCount" to FieldValue.increment(1)
+                    )
+                )
+                tx.update(
+                    targetDoc,
+                    mapOf(
+                        "followers" to FieldValue.increment(1),
+                        "followersCount" to FieldValue.increment(1)
+                    )
+                )
+            }
+            null
+        }.await()
+
+        return getUserById(targetUserId)
+    }
+
+    suspend fun unfollowUser(currentUserId: String, targetUserId: String): UserInfo {
+        if (currentUserId.isBlank() || targetUserId.isBlank() || currentUserId == targetUserId) {
+            return getUserById(targetUserId)
+        }
+
+        val currentDoc = collection.document(currentUserId)
+        val targetDoc = collection.document(targetUserId)
+        val followingDoc = currentDoc.collection("following").document(targetUserId)
+        val followerDoc = targetDoc.collection("followers").document(currentUserId)
+
+        db.runTransaction { tx ->
+            val isFollowing = tx.get(followingDoc).exists()
+            if (isFollowing) {
+                tx.delete(followingDoc)
+                tx.delete(followerDoc)
+                tx.update(
+                    currentDoc,
+                    mapOf(
+                        "following" to FieldValue.increment(-1),
+                        "followingCount" to FieldValue.increment(-1)
+                    )
+                )
+                tx.update(
+                    targetDoc,
+                    mapOf(
+                        "followers" to FieldValue.increment(-1),
+                        "followersCount" to FieldValue.increment(-1)
+                    )
+                )
+            }
+            null
+        }.await()
+
+        return getUserById(targetUserId)
     }
 
     private fun Map<String, Any?>.toUserInfo(defaultId: String): UserInfo {
@@ -138,8 +238,16 @@ class UserFirestoreDataSourceImpl(
             username = resolvedUsername,
             profileImageUrl = resolvedAvatar?.toString().orEmpty(),
             bio = this["bio"]?.toString().orEmpty(),
-            followers = (this["followers"] as? Number)?.toInt() ?: 0,
-            following = (this["following"] as? Number)?.toInt() ?: 0,
+            followers = sequenceOf(
+                this["followers"],
+                this["followersCount"],
+                this["followers_count"],
+            ).mapNotNull { (it as? Number)?.toInt() }.firstOrNull() ?: 0,
+            following = sequenceOf(
+                this["following"],
+                this["followingCount"],
+                this["following_count"],
+            ).mapNotNull { (it as? Number)?.toInt() }.firstOrNull() ?: 0,
             playlists = emptyList(),
             backendUserId = backendId
         )
