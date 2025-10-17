@@ -12,18 +12,28 @@ class UserFirestoreDataSourceImpl(
 ) {
     private val collection = db.collection("users")
 
-    suspend fun getUserById(id: String, currentUserId: String): UserInfo {
-        val snap = collection.document(id).get().await()
-        if (!snap.exists()) throw IllegalStateException("Usuario no encontrado en Firestore: $id")
-        val docRef = collection.document(id)
-        val respuesta = docRef.get().await()
-        val user = respuesta.toObject(UserInfo::class.java) ?: throw Exception("Usuario no encontrado en Firestore: $id")
-        val followerDoc = collection.document(id).collection("followers").document(currentUserId).get().await()
-        val exist = followerDoc.exists()
-        user.followed = exist
-        val data = snap.data.orEmpty()
+    suspend fun getUserById(id: String, currentUserId: String? = null): UserInfo {
+        val snapshot = collection.document(id).get().await()
+        if (!snapshot.exists()) throw IllegalStateException("Usuario no encontrado en Firestore: $id")
 
-        return data.toUserInfo(defaultId = id)
+        val data = snapshot.data.orEmpty()
+        val user = snapshot.toObject(UserInfo::class.java) ?: data.toUserInfo(defaultId = id)
+
+        val isFollowed = currentUserId
+            ?.takeIf { it.isNotBlank() && it != id }
+            ?.let { followerId ->
+                collection
+                    .document(id)
+                    .collection("followers")
+                    .document(followerId)
+                    .get()
+                    .await()
+                    .exists()
+            }
+            ?: false
+
+        user.followed = isFollowed
+
         return user
     }
 
@@ -158,7 +168,7 @@ class UserFirestoreDataSourceImpl(
 
     suspend fun followUser(currentUserId: String, targetUserId: String): UserInfo {
         if (currentUserId.isBlank() || targetUserId.isBlank() || currentUserId == targetUserId) {
-            return getUserById(targetUserId)
+            return getUserById(targetUserId, currentUserId)
         }
 
         val currentDoc = collection.document(currentUserId)
@@ -201,12 +211,12 @@ class UserFirestoreDataSourceImpl(
             null
         }.await()
 
-        return getUserById(targetUserId)
+        return getUserById(targetUserId, currentUserId)
     }
 
     suspend fun unfollowUser(currentUserId: String, targetUserId: String): UserInfo {
         if (currentUserId.isBlank() || targetUserId.isBlank() || currentUserId == targetUserId) {
-            return getUserById(targetUserId)
+            return getUserById(targetUserId, currentUserId)
         }
 
         val currentDoc = collection.document(currentUserId)
@@ -237,10 +247,10 @@ class UserFirestoreDataSourceImpl(
             null
         }.await()
 
-        return getUserById(targetUserId)
+        return getUserById(targetUserId, currentUserId)
     }
 
-    private fun Map<String, Any?>.toUserInfo(defaultId: String): UserInfo {
+    private fun Map<String, Any?>.toUserInfo(defaultId: String, followed: Boolean = false): UserInfo {
         val resolvedUsername = sequenceOf(
             this["username"],
             this["name"],
@@ -287,7 +297,7 @@ class UserFirestoreDataSourceImpl(
             ).mapNotNull { (it as? Number)?.toInt() }.firstOrNull() ?: 0,
             playlists = emptyList(),
             backendUserId = backendId,
-            followed = false
+            followed = followed
         )
     }
 
