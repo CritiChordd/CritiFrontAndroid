@@ -129,11 +129,14 @@ class ReviewDetailViewModel @Inject constructor(
                     val isSelf = authorUid.isNotBlank() && authorUid == userId
                     if (review != null && authorUid.isNotBlank() && !isSelf) {
                         // Obtener nombre del que dio like
-                        val likerName = runCatching {
-                            userRepository.getUserById(userId).getOrNull()?.let { info ->
-                                info.username.takeIf { it.isNotBlank() } ?: info.name
-                            }
-                        }.getOrNull() ?: "Alguien"
+                        val likerInfo = runCatching {
+                            userRepository.getUserById(userId).getOrNull()
+                        }.getOrNull()
+
+                        val likerName = likerInfo?.username?.takeIf { it.isNotBlank() }
+                            ?: likerInfo?.name?.takeIf { it.isNotBlank() }
+                            ?: "Alguien"
+                        val likerAvatarUrl = likerInfo?.avatarUrl.orEmpty()
 
                         val snippet = review.content.takeIf { it.isNotBlank() }?.let { it.take(80) }
 
@@ -143,6 +146,7 @@ class ReviewDetailViewModel @Inject constructor(
                                 reviewId = review.id,
                                 likerId = userId,
                                 likerName = likerName,
+                                likerAvatarUrl = likerAvatarUrl,
                                 reviewSnippet = snippet
                             )
                         }

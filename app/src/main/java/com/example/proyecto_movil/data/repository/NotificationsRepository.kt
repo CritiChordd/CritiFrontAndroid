@@ -23,6 +23,7 @@ class NotificationsRepository @Inject constructor(
         reviewId: String,
         likerId: String,
         likerName: String,
+        likerAvatarUrl: String,
         reviewSnippet: String?
-    ) = ds.addLikeNotification(userId, reviewId, likerId, likerName, reviewSnippet)
+    ) = ds.addLikeNotification(userId, reviewId, likerId, likerName, likerAvatarUrl, reviewSnippet)
 }

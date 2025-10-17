@@ -84,6 +84,7 @@ class NotificationsFirestoreDataSourceImpl(
         reviewId: String,
         likerId: String,
         likerName: String,
+        likerAvatarUrl: String,
         reviewSnippet: String?
     ) {
         if (userId.isBlank() || reviewId.isBlank() || likerId.isBlank()) return
@@ -98,6 +99,9 @@ class NotificationsFirestoreDataSourceImpl(
             "reviewId" to reviewId,
             "likerId" to likerId,
             "likerName" to likerName,
+            "actorId" to likerId,
+            "actorName" to likerName,
+            "actorImageUrl" to likerAvatarUrl,
             "reviewSnippet" to (reviewSnippet ?: ""),
             "createdAt" to FieldValue.serverTimestamp(),
             "read" to false,
