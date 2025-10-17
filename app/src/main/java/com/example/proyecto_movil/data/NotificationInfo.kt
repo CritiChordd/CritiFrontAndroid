@@ -6,6 +6,7 @@ data class NotificationInfo(
     val reviewId: String? = null,
     val likerId: String? = null,
     val likerName: String? = null,
+    val likerAvatarUrl: String? = null,
     val reviewSnippet: String? = null,
     val actorId: String? = null,
     val actorName: String? = null,
