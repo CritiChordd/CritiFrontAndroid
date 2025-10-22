@@ -51,10 +51,16 @@ exports.sendLikeNotification = functions.firestore
     const likerAvatarUrl =
       (likerDoc.exists &&
         (likerDoc.get("profileImageUrl") ||
+          likerDoc.get("profileImageURL") ||
+          likerDoc.get("profile_pic") ||
           likerDoc.get("avatarUrl") ||
-          likerDoc.get("photoUrl"))) ||
+          likerDoc.get("photoUrl") ||
+          likerDoc.get("photoURL"))) ||
       "";
-    const reviewSnippet = (review.content || "").toString().slice(0, 50);
+    const rawSnippet = (review.content || "").toString();
+    const reviewSnippet = rawSnippet.length > 80
+      ? `${rawSnippet.slice(0, 77)}…`
+      : rawSnippet;
     const message = reviewSnippet
       ? `${likerName} le dio like a tu reseña\n"${reviewSnippet}"`
       : `${likerName} le dio like a tu reseña`;
@@ -65,12 +71,13 @@ exports.sendLikeNotification = functions.firestore
 
     const payload = {
       token,
-      notification: {
-        title: "Nuevo Like",
-        body: `${likerName} le dio like a tu reseña`,
+      android: {
+        priority: "high",
       },
       data: {
         type: "review_like",
+        title: "Nuevo Like",
+        body: message,
         reviewId: reviewId,
         likerId: likerId,
         reviewSnippet: reviewSnippet,
