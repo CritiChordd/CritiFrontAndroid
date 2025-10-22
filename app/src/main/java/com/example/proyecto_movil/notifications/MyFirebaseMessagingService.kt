@@ -87,11 +87,25 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         val channelId = "likes_channel"
         createNotificationChannel(channelId)
 
+        val shortBody = body.lineSequence()
+            .firstOrNull { it.isNotBlank() }
+            ?.trim()
+            ?.let {
+                val maxLength = 80
+                if (it.length > maxLength) it.take(maxLength - 1) + "…" else it
+            }
+            ?: body
+
         val builder = NotificationCompat.Builder(this, channelId)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle(title)
-            .setContentText(body)
+            .setContentText(shortBody)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
+            .setCategory(NotificationCompat.CATEGORY_SOCIAL)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setAutoCancel(true)
 
         with(NotificationManagerCompat.from(this)) {
             notify((System.currentTimeMillis() % 100000).toInt(), builder.build())

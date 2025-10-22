@@ -90,10 +90,20 @@ class NotificationsFirestoreDataSourceImpl(
     ) {
         if (userId.isBlank() || reviewId.isBlank() || likerId.isBlank()) return
 
-        val notificationRef = db.collection("users")
+        val notificationsCollection = db.collection("users")
             .document(userId)
             .collection("notifications")
-            .document("like_${reviewId}_${likerId}")
+
+        val cleanSnippet = reviewSnippet?.takeIf { it.isNotBlank() }
+        val message = buildString {
+            append("$likerName le dio like a tu reseña")
+            if (!cleanSnippet.isNullOrBlank()) {
+                append('\n')
+                append('"')
+                append(cleanSnippet)
+                append('"')
+            }
+        }
 
         val data = mapOf(
             "type" to "review_like",
@@ -104,11 +114,12 @@ class NotificationsFirestoreDataSourceImpl(
             "actorId" to likerId,
             "actorName" to likerName,
             "actorImageUrl" to likerAvatarUrl,
-            "reviewSnippet" to (reviewSnippet ?: ""),
+            "reviewSnippet" to (cleanSnippet ?: ""),
+            "message" to message,
             "createdAt" to FieldValue.serverTimestamp(),
             "read" to false,
         )
 
-        notificationRef.set(data, SetOptions.merge()).await()
+        notificationsCollection.add(data).await()
     }
 }
