@@ -142,7 +142,12 @@ object AppModule {
     fun provideArtistRepository(ds: ArtistRemoteDataSource) = ArtistRepository(ds)
 
     @Singleton @Provides
-    fun provideStorageRepository(storage: FirebaseStorage) = StorageRepository(storage)
+    fun provideStorageRemoteDataSource(storage: FirebaseStorage) =
+        com.example.proyecto_movil.data.datasource.StorageRemoteDataSource(storage)
+
+    @Singleton @Provides
+    fun provideStorageRepository(ds: com.example.proyecto_movil.data.datasource.StorageRemoteDataSource) =
+        StorageRepository(ds)
 
     @Singleton @Provides
     fun provideNotificationsRepository(ds: NotificationsRemoteDataSource) = NotificationsRepository(ds)

@@ -33,9 +33,4 @@ fun UserProfileDto.toUserUI(): UserInfo {
     )
 }
 
-/** Para update en API */
-data class UpdateUserDto(
-    val username: String,
-    val bio: String,
-    val profile_pic: String? = null
-)
+// UpdateUserDto se define en UpdateUserDto.kt

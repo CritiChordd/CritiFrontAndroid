@@ -1,9 +1,9 @@
 package com.example.proyecto_movil.data.datasource.impl.firestore
 
-import com.example.proyecto_movil.data.AlbumInfo
-import com.example.proyecto_movil.data.ArtistInfo
 import com.example.proyecto_movil.data.datasource.AlbumRemoteDataSource
+import com.example.proyecto_movil.data.dtos.AlbumDto
 import com.example.proyecto_movil.data.dtos.AlbumFirestoreDto
+import com.example.proyecto_movil.data.dtos.ArtistDto
 import com.example.proyecto_movil.data.dtos.CreateAlbumDto
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
@@ -16,15 +16,15 @@ class AlbumFirestoreDataSourceImpl @Inject constructor(
 
     private val collection get() = firestore.collection("albums")
 
-    override suspend fun getAllAlbums(): List<AlbumInfo> {
+    override suspend fun getAllAlbums(): List<AlbumDto> {
         val snapshot = collection.get().await()
-        return snapshot.documents.mapNotNull { it.toAlbumInfoOrNull() }
-            .sortedBy { it.title.lowercase() }
+        return snapshot.documents.mapNotNull { it.toAlbumDtoOrNull() }
+            .sortedBy { (it.title ?: "").lowercase() }
     }
 
-    override suspend fun getAlbumById(id: Int): AlbumInfo {
+    override suspend fun getAlbumById(id: Int): AlbumDto {
         val direct = collection.document(id.toString()).get().await()
-        direct.toAlbumInfoOrNull()?.let { return it }
+        direct.toAlbumDtoOrNull()?.let { return it }
 
         val fallback = collection
             .whereEqualTo("id", id)
@@ -32,11 +32,11 @@ class AlbumFirestoreDataSourceImpl @Inject constructor(
             .get()
             .await()
 
-        val album = fallback.documents.firstOrNull()?.toAlbumInfoOrNull()
+        val album = fallback.documents.firstOrNull()?.toAlbumDtoOrNull()
         return album ?: throw NoSuchElementException("Álbum $id no encontrado en Firestore")
     }
 
-    override suspend fun createAlbum(request: CreateAlbumDto): AlbumInfo {
+    override suspend fun createAlbum(request: CreateAlbumDto): AlbumDto {
         val title = request.title.trim()
         val artistName = request.artistName.trim()
 
@@ -64,21 +64,21 @@ class AlbumFirestoreDataSourceImpl @Inject constructor(
 
         collection.document(albumId.toString()).set(payload).await()
 
-        return AlbumInfo(
+        return AlbumDto(
             id = albumId,
             title = title,
             year = sanitizedYear,
             coverUrl = sanitizedCover,
-            artist = ArtistInfo(
+            artist = ArtistDto(
                 id = artistId,
                 name = artistName,
-                profileImageUrl = sanitizedArtistImage,
+                imageUrl = sanitizedArtistImage,
                 genre = sanitizedGenre
             )
         )
     }
 
-    private fun DocumentSnapshot.toAlbumInfoOrNull(): AlbumInfo? {
+    private fun DocumentSnapshot.toAlbumDtoOrNull(): AlbumDto? {
         val dto = this.toObject(AlbumFirestoreDto::class.java) ?: return null
         val id = dto.id ?: this.getLong("id")?.toInt()
         val artistId = dto.artistId ?: this.getLong("artistId")?.toInt()
@@ -103,15 +103,15 @@ class AlbumFirestoreDataSourceImpl @Inject constructor(
             ?: this.getString("artistGenre")
             ?: ""
 
-        return AlbumInfo(
+        return AlbumDto(
             id = id,
             title = title,
             year = year,
             coverUrl = coverUrl,
-            artist = ArtistInfo(
+            artist = ArtistDto(
                 id = artistId,
                 name = artistName,
-                profileImageUrl = artistImageUrl,
+                imageUrl = artistImageUrl,
                 genre = artistGenre
             )
         )
