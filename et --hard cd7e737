@@ -1,0 +1,101 @@
+* [33m565d34b[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mrescate-antes-de-revert[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/busqueda[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m tests
+*   [33ma488c8a[m[33m ([m[1;31morigin/Adicional[m[33m, [m[1;32mAdicional[m[33m)[m Merge branch 'main' of https://github.com/CritiChordd/CritiFrontAndroid # Please enter a commit message to explain why this merge is necessary, # especially if it merges an updated upstream into a topic branch. # # Lines starting with '#' will be ignored, and an empty message aborts # the commit.
+[32m|[m[33m\[m  
+[32m|[m *   [33mcd7e737[m Merge branch 'penalizaciones' into main
+[32m|[m [34m|[m[35m\[m  
+[32m|[m [34m|[m * [33me48aa10[m[33m ([m[1;31morigin/penalizaciones[m[33m)[m penalizaciones: datasources devuelven DTOs; repos mapean a Info; StorageRepository usa StorageRemoteDataSource; reemplazo de runCatching innecesario con try/catch; limpieza de DTOs y naming
+[32m|[m [34m|[m[34m/[m  
+[32m|[m * [33m9ae8474[m Subir a firebasecli en modo Debug
+[32m|[m *   [33m887aa60[m LikesFuncionales
+[32m|[m [36m|[m[1;31m\[m  
+[32m|[m [36m|[m * [33mf05b4a2[m Merge pull request #13 LikesFuncionales
+[32m|[m [36m|[m[36m/[m[1;33m|[m 
+[32m|[m [36m|[m * [33m9b989b1[m[33m ([m[1;31morigin/codex/fix-like-notifications-and-profile-image-display[m[33m, [m[1;32mcodex/fix-like-notifications-and-profile-image-display[m[33m)[m Fix like notification payload and avatar rendering
+[32m|[m [36m|[m * [33mfdc8bcb[m Fix like notifications metadata and push alert
+[32m|[m [36m|[m[36m/[m  
+[32m|[m *   [33m93c01c6[m[33m ([m[1;31morigin/Correcciones[m[33m)[m Merge pull request #12
+[32m|[m [1;34m|[m[1;35m\[m  
+[32m|[m [1;34m|[m * [33m4b8a78d[m[33m ([m[1;31morigin/codex/add-user-image-to-notification-likes[m[33m, [m[1;32mcodex/add-user-image-to-notification-likes[m[33m)[m Fix like notification document id
+[32m|[m [1;34m|[m * [33m46f4637[m Ensure like notifications carry liker avatars
+[32m|[m [1;34m|[m * [33mf650b99[m Add liker avatar to notifications
+* [1;34m|[m [1;35m|[m [33mf32c331[m Agregacion de dependencias para el splash screen
+[1;34m|[m[1;34m/[m [1;35m/[m  
+* [1;35m|[m   [33mb4de60b[m Merge branch '2-pantallas-funcionando-'
+[1;35m|[m[31m\[m [1;35m\[m  
+[1;35m|[m [31m|[m[1;35m/[m  
+[1;35m|[m[1;35m/[m[31m|[m   
+[1;35m|[m * [33m9f339f7[m[33m ([m[1;31morigin/2-pantallas-funcionando-[m[33m)[m Se agrega el state de Notificacion
+* [31m|[m [33m9354fae[m Merge pull request #11
+[32m|[m[31m\[m[31m|[m 
+[32m|[m *   [33m19fc0af[m Merge branch 'main' into 2-pantallas-funcionando-
+[32m|[m [34m|[m[32m\[m  
+[32m|[m [34m|[m[32m/[m  
+[32m|[m[32m/[m[34m|[m   
+* [34m|[m [33m36a83a5[m notificacion likes
+[35m|[m * [33m3f6600f[m pantallas
+[35m|[m[35m/[m  
+* [33m81dd0d1[m Implementacion de lista de seguidores y seguidos con FollowListScreen.kt
+*   [33mab43315[m Merge branch 'main' of https://github.com/CritiChordd/CritiFrontAndroid
+[36m|[m[1;31m\[m  
+[36m|[m *   [33mc8af33a[m Merge pull request #10
+[36m|[m [1;32m|[m[1;33m\[m  
+[36m|[m [1;32m|[m * [33mf328901[m[33m ([m[1;31morigin/codex/fix-kotlin-compilation-errors-0mkknd[m[33m, [m[1;32mcodex/fix-kotlin-compilation-errors-0mkknd[m[33m)[m Prefer display name over id on profile header
+[36m|[m [1;32m|[m * [33me9d646e[m Provide default values for UserInfo Firestore deserialization
+[36m|[m * [1;33m|[m   [33m3c9cc24[m Merge pull request #9
+[36m|[m [1;33m|[m[1;35m\[m [1;33m\[m  
+[36m|[m [1;33m|[m [1;35m|[m[1;33m/[m  
+[36m|[m [1;33m|[m[1;33m/[m[1;35m|[m   
+[36m|[m [1;33m|[m * [33m72ae3c6[m[33m ([m[1;31morigin/codex/fix-kotlin-compilation-errors[m[33m, [m[1;32mcodex/fix-kotlin-compilation-errors[m[33m)[m Fix user follow state lookups
+[36m|[m [1;33m|[m[1;33m/[m  
+* [1;33m|[m [33madd443d[m Merge branch 'main' of https://github.com/CritiChordd/CritiFrontAndroid
+[1;36m|[m[1;33m\[m[1;33m|[m 
+[1;36m|[m *   [33mc873099[m Merge pull request #8
+[1;36m|[m [32m|[m[33m\[m  
+[1;36m|[m [32m|[m *   [33mfd47289[m[33m ([m[1;31morigin/CarlosRama[m[33m)[m Merge branch 'main' into CarlosRama
+[1;36m|[m [32m|[m [34m|[m[32m\[m  
+[1;36m|[m [32m|[m [34m|[m[32m/[m  
+[1;36m|[m [32m|[m[32m/[m[34m|[m   
+[1;36m|[m * [34m|[m [33m3c38ec9[m video hasta el minuto 36
+[1;36m|[m [35m|[m *   [33m2571133[m Merge pull request #7
+[1;36m|[m [35m|[m [36m|[m[1;31m\[m  
+[1;36m|[m [35m|[m [36m|[m * [33m03bf68c[m[33m ([m[1;31morigin/codex/add-follow/unfollow-user-feature[m[33m, [m[1;32mcodex/add-follow/unfollow-user-feature[m[33m)[m Enable navigation to profiles from notifications
+[1;36m|[m [35m|[m [36m|[m * [33ma95db16[m Improve notifications UI and follow counters
+[1;36m|[m [35m|[m [36m|[m * [33m0d4a29b[m Fix notifications placeholder resource
+[1;36m|[m [35m|[m [36m|[m * [33mcbfdd48[m Add follow actions and notifications
+[1;36m|[m [35m|[m [36m|[m[36m/[m  
+[1;36m|[m [35m|[m * [33m54e0bb8[m feat(notifications): create Cloud Function to store review_like notifications; add Notifications DS/Repo/VM; update screen to list likes (liker + review snippet); wire route to ViewModel
+[1;36m|[m [35m|[m * [33m5804c28[m fix(fcm): move helper functions inside MainActivity to use 'this' and lifecycleScope
+[1;36m|[m [35m|[m * [33m4d4cd50[m chore(fcm): request POST_NOTIFICATIONS at startup and refresh FCM token if user is logged in
+[1;36m|[m [35m|[m * [33ma6e3dbe[m feat(fcm): store FCM token on login/signup; add FirebaseMessagingService and manifest entries; feat(likes): use subcollection listener for stable like count; fix: like toggle writes only like doc; feat(functions): add sendLikeNotification Cloud Function
+[1;36m|[m [35m|[m * [33me8be1a0[m[33m ([m[1;31morigin/likes[m[33m)[m Fixes en AppModule.kt, implementacion de likecount para ReviewDetailScreen.kt
+[1;36m|[m [35m|[m * [33m7384798[m likes ahi suave
+[1;36m|[m [35m|[m[35m/[m  
+[1;36m|[m *   [33m3a852ab[m Merge pull request #6
+[1;36m|[m [1;32m|[m[1;33m\[m  
+[1;36m|[m [1;32m|[m * [33m73a5ef4[m[33m ([m[1;31morigin/codex/add-firestore-album-creation-feature[m[33m, [m[1;32mcodex/add-firestore-album-creation-feature[m[33m)[m Add notifications placeholder screen
+[1;36m|[m [1;32m|[m * [33m3c841f8[m Import clip modifier for review detail avatar
+[1;36m|[m [1;32m|[m * [33mc6eb84d[m Fix profile review author info and improve settings screen
+[1;36m|[m [1;32m|[m * [33m2e96de3[m Fix ReviewCard preview composable annotation
+[1;36m|[m [1;32m|[m * [33m4678d83[m Improve profile edit defaults and review author display
+* [1;32m|[m [1;33m|[m [33m970639b[m aa
+[1;32m|[m[1;32m/[m [1;33m/[m  
+* [1;33m|[m   [33m8e7c466[m Merge pull request #5
+[1;33m|[m[1;35m\[m [1;33m\[m  
+[1;33m|[m [1;35m|[m[1;33m/[m  
+[1;33m|[m[1;33m/[m[1;35m|[m   
+[1;33m|[m * [33m102ae0f[m Load albums from Firestore and allow creation
+[1;33m|[m[1;33m/[m  
+* [33m4109691[m correcciones
+* [33m6275167[m Enable scrolling reviews and add review detail navigation
+* [33mf68265d[m Add favorite flag to reviews and enforce profile limit
+* [33m0fddf91[m Improve user search and profile reviews
+*   [33m3f1b4b0[m fef
+[1;36m|[m[31m\[m  
+[1;36m|[m *   [33m4a88db3[m Fusion repos
+[1;36m|[m [32m|[m[33m\[m  
+[1;36m|[m [32m|[m *   [33m9ba57d7[m Merge pull request #2 from JuanV4rgas/FireStore
+[1;36m|[m [32m|[m [34m|[m[35m\[m  
+[1;36m|[m [32m|[m [34m|[m * [33mef949de[m HomePageScreen.kt ahora carga mas de 3 reseñas en la pantalla con lazyrow, ahora se organizan por puntaje en la sección popular entre amigos.
+[1;36m|[m [32m|[m [34m|[m * [33me2d8814[m Se cargan los albumes de forma correcta junto a sus reviews
+[1;36m|[m * [34m|[m [35m|[m   [33m9731ef0[m Merge pull request #2 from CritiChordd
+[1;36m|[m 
