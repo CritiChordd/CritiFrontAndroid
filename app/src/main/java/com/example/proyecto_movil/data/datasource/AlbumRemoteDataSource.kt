@@ -11,4 +11,6 @@ interface AlbumRemoteDataSource {
     suspend fun getAlbumById(id: Int): AlbumInfo
 
     suspend fun createAlbum(request: CreateAlbumDto): AlbumInfo
+
+    suspend fun searchAlbums(query: String, limit: Int = 10): List<AlbumInfo>
 }

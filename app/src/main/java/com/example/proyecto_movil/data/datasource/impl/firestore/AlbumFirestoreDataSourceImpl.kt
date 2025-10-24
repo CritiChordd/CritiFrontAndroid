@@ -78,6 +78,25 @@ class AlbumFirestoreDataSourceImpl @Inject constructor(
         )
     }
 
+    override suspend fun searchAlbums(query: String, limit: Int): List<AlbumInfo> {
+        val sanitized = query.trim()
+        if (sanitized.length < 2) return emptyList()
+
+        val normalized = sanitized.lowercase()
+        val maxItems = limit.coerceAtLeast(0)
+
+        if (maxItems == 0) return emptyList()
+
+        return getAllAlbums()
+            .asSequence()
+            .filter { album ->
+                album.title.contains(normalized, ignoreCase = true) ||
+                    album.artist.name.contains(normalized, ignoreCase = true)
+            }
+            .take(maxItems)
+            .toList()
+    }
+
     private fun DocumentSnapshot.toAlbumInfoOrNull(): AlbumInfo? {
         val dto = this.toObject(AlbumFirestoreDto::class.java) ?: return null
         val id = dto.id ?: this.getLong("id")?.toInt()

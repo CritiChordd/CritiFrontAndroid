@@ -39,4 +39,14 @@ class AlbumRepository @Inject constructor(
             Result.failure(e)
         }
     }
+
+    suspend fun searchAlbums(query: String, limit: Int = 10): Result<List<AlbumInfo>> {
+        return try {
+            val albums = albumRemoteDataSource.searchAlbums(query, limit)
+            Result.success(albums)
+        } catch (e: Exception) {
+            Log.e("AlbumRepository", "Error en searchAlbums: ${e.message}")
+            Result.failure(e)
+        }
+    }
 }
