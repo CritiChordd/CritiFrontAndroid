@@ -132,7 +132,7 @@ fun AppNavHost(
                 onAlbumClick = { album -> navController.navigate(Screen.Album.createRoute(album.id)) },
                 onReviewProfileImageClicked = { uid -> navController.navigate(Screen.Profile.createRoute(uid)) },
                 onNotificationsClick = { navController.navigate(Screen.Notifications.route) },
-                onFollowingFeedClick = { navController.navigate(Screen.FollowingFeed.route) } // ← NUEVO
+                onFollowingFeedClick = { navController.navigate(Screen.FollowingFeed.route) }
             )
         }
 

@@ -3,15 +3,8 @@ package com.example.proyecto_movil.ui.Screens.Welcome
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,7 +22,7 @@ import com.example.proyecto_movil.ui.theme.Proyecto_movilTheme
 @Composable
 fun WelcomeScreen(
     viewModel: WelcomeViewModel,
-    onStartClick: () -> Unit,
+    onStartClick: () -> Unit
 ) {
     val state by viewModel.uiState.collectAsState()
 
@@ -120,10 +113,7 @@ fun WelcomeScreen(
 fun WelcomeScreenLightPreview() {
     Proyecto_movilTheme(useDarkTheme = false) {
         val vm = remember { WelcomeViewModel() }
-        WelcomeScreen(
-            viewModel = vm,
-            onStartClick = {}
-        )
+        WelcomeScreen(viewModel = vm, onStartClick = {})
     }
 }
 
@@ -132,9 +122,6 @@ fun WelcomeScreenLightPreview() {
 fun WelcomeScreenDarkPreview() {
     Proyecto_movilTheme(useDarkTheme = true) {
         val vm = remember { WelcomeViewModel() }
-        WelcomeScreen(
-            viewModel = vm,
-            onStartClick = {}
-        )
+        WelcomeScreen(viewModel = vm, onStartClick = {})
     }
 }
