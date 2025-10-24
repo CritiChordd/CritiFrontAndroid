@@ -38,6 +38,7 @@ import com.example.proyecto_movil.R
 import com.example.proyecto_movil.data.AlbumInfo
 import com.example.proyecto_movil.data.UserInfo
 import com.example.proyecto_movil.ui.Screens.Home.HomeViewModel
+import com.example.proyecto_movil.ui.Screens.Home.SearchResult
 import com.example.proyecto_movil.ui.utils.ScreenBackground
 import com.example.proyecto_movil.ui.utils.AlbumCard
 
@@ -74,6 +75,7 @@ fun HomeScreen(
                     onQueryChange = viewModel::onSearchQueryChanged,
                     onClearQuery = viewModel::clearSearch,
                     onUserClick = viewModel::onUserResultClicked,
+                    onAlbumClick = viewModel::onAlbumResultClicked,
                     onNotificationsClick = onNotificationsClick,
                     onFollowingFeedClick = onFollowingFeedClick   // ← NUEVO
                 )
@@ -131,12 +133,13 @@ private fun SearchSection(
     isSearchActive: Boolean,
     searchQuery: String,
     isSearching: Boolean,
-    results: List<UserInfo>,
+    results: List<SearchResult>,
     errorMessage: String?,
     onToggleSearch: () -> Unit,
     onQueryChange: (String) -> Unit,
     onClearQuery: () -> Unit,
     onUserClick: (UserInfo) -> Unit,
+    onAlbumClick: (AlbumInfo) -> Unit,
     onNotificationsClick: () -> Unit,
     onFollowingFeedClick: () -> Unit       // ← NUEVO
 ) {
@@ -179,7 +182,7 @@ private fun SearchSection(
                     )
                 }
                 Text(
-                    text = "Explora usuarios",
+                    text = "Explora usuarios y álbumes",
                     style = MaterialTheme.typography.headlineSmall,
                     color = MaterialTheme.colorScheme.onBackground
                 )
@@ -187,7 +190,7 @@ private fun SearchSection(
             IconButton(onClick = onToggleSearch) {
                 Icon(
                     imageVector = if (isSearchActive) Icons.Filled.Close else Icons.Filled.Search,
-                    contentDescription = if (isSearchActive) "Cerrar búsqueda" else "Buscar usuarios"
+                    contentDescription = if (isSearchActive) "Cerrar búsqueda" else "Buscar usuarios o álbumes"
                 )
             }
         }
@@ -199,7 +202,7 @@ private fun SearchSection(
                 modifier = Modifier
                     .fillMaxWidth()
                     .focusRequester(focusRequester),
-                label = { Text("Buscar por nombre o usuario") },
+                label = { Text("Buscar usuarios o álbumes") },
                 trailingIcon = {
                     if (searchQuery.isNotBlank()) {
                         IconButton(onClick = onClearQuery) {
@@ -224,13 +227,17 @@ private fun SearchSection(
             when {
                 results.isNotEmpty() -> {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        results.forEach { user ->
-                            UserResultRow(user = user, onClick = onUserClick)
+                        results.forEach { result ->
+                            when (result) {
+                                is SearchResult.User -> UserResultRow(user = result.data, onClick = onUserClick)
+                                is SearchResult.Album -> AlbumResultRow(album = result.data, onClick = onAlbumClick)
+                            }
                         }
                     }
                 }
                 errorMessage != null -> {
-                    val isInfo = errorMessage.contains("No se encontraron", ignoreCase = true)
+                    val isInfo = errorMessage.contains("No se encontraron", ignoreCase = true) ||
+                        errorMessage.contains("Algunos resultados", ignoreCase = true)
                     Text(
                         text = errorMessage,
                         color = if (isInfo) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
@@ -278,6 +285,45 @@ private fun UserResultRow(user: UserInfo, onClick: (UserInfo) -> Unit) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AlbumResultRow(album: AlbumInfo, onClick: (AlbumInfo) -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp)
+                .clickable { onClick(album) },
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            AsyncImage(
+                model = album.coverUrl,
+                contentDescription = "Portada del álbum ${album.title}",
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(MaterialTheme.shapes.small),
+                contentScale = ContentScale.Crop
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = album.title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "${album.artist.name} • ${album.year}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }

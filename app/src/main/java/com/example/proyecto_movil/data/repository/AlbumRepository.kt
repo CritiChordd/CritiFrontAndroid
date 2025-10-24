@@ -4,6 +4,8 @@ import android.util.Log
 import com.example.proyecto_movil.data.AlbumInfo
 import com.example.proyecto_movil.data.datasource.AlbumRemoteDataSource
 import com.example.proyecto_movil.data.dtos.CreateAlbumDto
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 class AlbumRepository @Inject constructor(
@@ -19,6 +21,31 @@ class AlbumRepository @Inject constructor(
             Result.failure(e)
         }
     }
+
+    suspend fun searchAlbums(query: String, limit: Int = 10): Result<List<AlbumInfo>> =
+        withContext(Dispatchers.IO) {
+            try {
+                val sanitizedQuery = query.trim()
+                if (sanitizedQuery.isBlank()) {
+                    return@withContext Result.success(emptyList())
+                }
+
+                val lowerQuery = sanitizedQuery.lowercase()
+                val albums = albumRemoteDataSource.getAllAlbums()
+                    .asSequence()
+                    .filter { album ->
+                        album.title.lowercase().contains(lowerQuery) ||
+                            album.artist.name.lowercase().contains(lowerQuery)
+                    }
+                    .take(limit)
+                    .toList()
+
+                Result.success(albums)
+            } catch (e: Exception) {
+                Log.e("AlbumRepository", "Error en searchAlbums: ${e.message}")
+                Result.failure(e)
+            }
+        }
 
     suspend fun getAlbumById(id: Int): Result<AlbumInfo> {
         return try {

@@ -9,6 +9,7 @@ import com.example.proyecto_movil.data.UserInfo
 import com.example.proyecto_movil.data.repository.AlbumRepository
 import com.example.proyecto_movil.data.repository.ReviewRepository
 import com.example.proyecto_movil.data.repository.UserRepository
+import com.example.proyecto_movil.ui.Screens.Home.SearchResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -106,26 +107,36 @@ class HomeViewModel @Inject constructor(
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
             _uiState.update { it.copy(isSearching = true, searchError = null) }
-            userRepository.searchUsersByName(query, limit = 8).fold(
-                onSuccess = { users ->
-                    _uiState.update {
-                        it.copy(
-                            searchResults = users,
-                            isSearching = false,
-                            searchError = if (users.isEmpty()) "No se encontraron usuarios" else null
-                        )
-                    }
-                },
-                onFailure = { e ->
-                    _uiState.update {
-                        it.copy(
-                            searchResults = emptyList(),
-                            isSearching = false,
-                            searchError = e.message ?: "Error buscando usuarios"
-                        )
-                    }
+
+            val userResult = userRepository.searchUsersByName(query, limit = 8)
+            val albumResult = albumRepository.searchAlbums(query, limit = 8)
+
+            val results = buildList {
+                userResult.getOrNull()?.let { users ->
+                    addAll(users.map { SearchResult.User(it) })
                 }
-            )
+                albumResult.getOrNull()?.let { albums ->
+                    addAll(albums.map { SearchResult.Album(it) })
+                }
+            }
+
+            val failures = listOfNotNull(userResult.exceptionOrNull(), albumResult.exceptionOrNull())
+            val errorMessage = when {
+                results.isEmpty() && failures.isNotEmpty() ->
+                    failures.joinToString(" / ") { it.message ?: "Error al buscar" }
+
+                results.isEmpty() -> "No se encontraron usuarios ni álbumes"
+                failures.isNotEmpty() -> "Algunos resultados no pudieron cargarse"
+                else -> null
+            }
+
+            _uiState.update {
+                it.copy(
+                    searchResults = results,
+                    isSearching = false,
+                    searchError = errorMessage
+                )
+            }
         }
     }
 
@@ -158,6 +169,20 @@ class HomeViewModel @Inject constructor(
 
     fun consumeNavigateToUser() =
         _uiState.update { it.copy(navigateToUserId = null) }
+
+    fun onAlbumResultClicked(album: AlbumInfo) {
+        searchJob?.cancel()
+        searchJob = null
+        _uiState.update {
+            it.copy(
+                openAlbum = album,
+                isSearchActive = false,
+                searchResults = emptyList(),
+                searchQuery = "",
+                searchError = null
+            )
+        }
+    }
 
     /** 🔹 Filtrar lanzamientos recientes */
     fun getNewReleases(): List<AlbumInfo> =
