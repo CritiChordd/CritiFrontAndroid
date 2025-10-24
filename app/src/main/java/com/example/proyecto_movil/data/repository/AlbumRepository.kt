@@ -3,6 +3,7 @@ package com.example.proyecto_movil.data.repository
 import android.util.Log
 import com.example.proyecto_movil.data.AlbumInfo
 import com.example.proyecto_movil.data.datasource.AlbumRemoteDataSource
+import com.example.proyecto_movil.data.dtos.toAlbumInfo
 import com.example.proyecto_movil.data.dtos.CreateAlbumDto
 import javax.inject.Inject
 
@@ -12,7 +13,7 @@ class AlbumRepository @Inject constructor(
 
     suspend fun getAllAlbums(): Result<List<AlbumInfo>> {
         return try {
-            val albums = albumRemoteDataSource.getAllAlbums()
+            val albums = albumRemoteDataSource.getAllAlbums().map { it.toAlbumInfo() }
             Result.success(albums)
         } catch (e: Exception) {
             Log.e("AlbumRepository", "Error en getAllAlbums: ${e.message}")
@@ -22,7 +23,7 @@ class AlbumRepository @Inject constructor(
 
     suspend fun getAlbumById(id: Int): Result<AlbumInfo> {
         return try {
-            val album = albumRemoteDataSource.getAlbumById(id)
+            val album = albumRemoteDataSource.getAlbumById(id).toAlbumInfo()
             Result.success(album)
         } catch (e: Exception) {
             Log.e("AlbumRepository", "Error en getAlbumById: ${e.message}")
@@ -32,7 +33,7 @@ class AlbumRepository @Inject constructor(
 
     suspend fun createAlbum(request: CreateAlbumDto): Result<AlbumInfo> {
         return try {
-            val album = albumRemoteDataSource.createAlbum(request)
+            val album = albumRemoteDataSource.createAlbum(request).toAlbumInfo()
             Result.success(album)
         } catch (e: Exception) {
             Log.e("AlbumRepository", "Error en createAlbum: ${e.message}")

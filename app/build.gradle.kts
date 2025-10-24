@@ -35,7 +35,8 @@ android {
     }
 
     buildTypes {
-        debug { isDebuggable = true }
+        debug { isDebuggable = true
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
@@ -112,6 +113,7 @@ dependencies {
     implementation("com.google.firebase:firebase-firestore")
 
     // --- Coil (imágenes) ---
+    implementation("io.coil-kt:coil:2.4.0")
     implementation("io.coil-kt:coil-compose:2.4.0")
 
     // --- Retrofit ---

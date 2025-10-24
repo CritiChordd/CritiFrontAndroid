@@ -1,10 +1,8 @@
 package com.example.proyecto_movil.data.datasource.impl.firestore
 
-import com.example.proyecto_movil.data.ReviewInfo
 import com.example.proyecto_movil.data.datasource.ReviewRemoteDataSource
 import com.example.proyecto_movil.data.dtos.CreateReviewDto
 import com.example.proyecto_movil.data.dtos.ReviewDto
-import com.example.proyecto_movil.data.dtos.toReviewInfo
 import com.google.firebase.firestore.FirebaseFirestore
 import jakarta.inject.Inject
 import kotlinx.coroutines.channels.awaitClose
@@ -110,7 +108,7 @@ class ReviewFirestoreDataSourceImpl @Inject constructor(
         return snapshot.documents.mapNotNull { it.toReviewDtoOrNull() }
     }
 
-    override fun listenAllReviews(): Flow<List<ReviewInfo>> {
+    override fun listenAllReviews(): Flow<List<ReviewDto>> {
         return callbackFlow {
             val registration = db.collection("reviews").addSnapshotListener { snapshot, error ->
                 if (error != null) {
@@ -119,9 +117,7 @@ class ReviewFirestoreDataSourceImpl @Inject constructor(
                 }
 
                 val reviews = snapshot?.documents
-                    ?.mapNotNull { document ->
-                        document.toReviewDtoOrNull()?.toReviewInfo()
-                    }
+                    ?.mapNotNull { document -> document.toReviewDtoOrNull() }
                     .orEmpty()
 
                 trySend(reviews).isSuccess

@@ -1,6 +1,5 @@
 package com.example.proyecto_movil.data.datasource.impl.retrofit
 
-import com.example.proyecto_movil.data.ReviewInfo
 import com.example.proyecto_movil.data.datasource.ReviewRemoteDataSource
 import com.example.proyecto_movil.data.datasource.services.ReviewRetrofitService
 import com.example.proyecto_movil.data.dtos.CreateReviewDto
@@ -39,7 +38,7 @@ class ReviewRetrofitDataSourceImplement @Inject constructor(
         service.getReviewReplies(id)
 
 
-    override fun listenAllReviews(): Flow<List<ReviewInfo>> = emptyFlow()
+    override fun listenAllReviews(): Flow<List<ReviewDto>> = emptyFlow()
     override suspend fun sendOrDeleteReviewLike(reviewId: String, userId: String) {
         TODO("Not yet implemented")
     }

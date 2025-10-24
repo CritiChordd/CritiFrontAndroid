@@ -38,6 +38,7 @@ class NotificationsFirestoreDataSourceImpl(
                     reviewId = data["reviewId"]?.toString(),
                     likerId = data["likerId"]?.toString(),
                     likerName = data["likerName"]?.toString(),
+                    likerAvatarUrl = data["likerAvatarUrl"]?.toString(),
                     reviewSnippet = data["reviewSnippet"]?.toString(),
                     actorId = data["actorId"]?.toString(),
                     actorName = data["actorName"]?.toString(),
@@ -84,25 +85,41 @@ class NotificationsFirestoreDataSourceImpl(
         reviewId: String,
         likerId: String,
         likerName: String,
+        likerAvatarUrl: String,
         reviewSnippet: String?
     ) {
         if (userId.isBlank() || reviewId.isBlank() || likerId.isBlank()) return
 
-        val notificationRef = db.collection("users")
+        val notificationsCollection = db.collection("users")
             .document(userId)
             .collection("notifications")
-            .document("like_${'$'}reviewId_${'$'}likerId")
+
+        val cleanSnippet = reviewSnippet?.takeIf { it.isNotBlank() }
+        val message = buildString {
+            append("$likerName le dio like a tu reseña")
+            if (!cleanSnippet.isNullOrBlank()) {
+                append('\n')
+                append('"')
+                append(cleanSnippet)
+                append('"')
+            }
+        }
 
         val data = mapOf(
             "type" to "review_like",
             "reviewId" to reviewId,
             "likerId" to likerId,
             "likerName" to likerName,
-            "reviewSnippet" to (reviewSnippet ?: ""),
+            "likerAvatarUrl" to likerAvatarUrl,
+            "actorId" to likerId,
+            "actorName" to likerName,
+            "actorImageUrl" to likerAvatarUrl,
+            "reviewSnippet" to (cleanSnippet ?: ""),
+            "message" to message,
             "createdAt" to FieldValue.serverTimestamp(),
             "read" to false,
         )
 
-        notificationRef.set(data, SetOptions.merge()).await()
+        notificationsCollection.add(data).await()
     }
 }

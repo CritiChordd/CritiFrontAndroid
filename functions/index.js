@@ -45,8 +45,25 @@ exports.sendLikeNotification = functions.firestore
     }
 
     const token = userDoc.get("fcmToken");
-    const likerName = (likerDoc.exists && (likerDoc.get("name") || likerDoc.get("username"))) || "Alguien";
-    const reviewSnippet = (review.content || "").toString().slice(0, 50);
+    const likerName =
+      (likerDoc.exists && (likerDoc.get("name") || likerDoc.get("username"))) ||
+      "Alguien";
+    const likerAvatarUrl =
+      (likerDoc.exists &&
+        (likerDoc.get("profileImageUrl") ||
+          likerDoc.get("profileImageURL") ||
+          likerDoc.get("profile_pic") ||
+          likerDoc.get("avatarUrl") ||
+          likerDoc.get("photoUrl") ||
+          likerDoc.get("photoURL"))) ||
+      "";
+    const rawSnippet = (review.content || "").toString();
+    const reviewSnippet = rawSnippet.length > 80
+      ? `${rawSnippet.slice(0, 77)}…`
+      : rawSnippet;
+    const message = reviewSnippet
+      ? `${likerName} le dio like a tu reseña\n"${reviewSnippet}"`
+      : `${likerName} le dio like a tu reseña`;
     if (!token) {
       console.log("Usuario sin fcmToken, no se envía notificación");
       return null;
@@ -54,15 +71,18 @@ exports.sendLikeNotification = functions.firestore
 
     const payload = {
       token,
-      notification: {
-        title: "Nuevo Like",
-        body: `${likerName} le dio like a tu reseña`,
+      android: {
+        priority: "high",
       },
       data: {
         type: "review_like",
+        title: "Nuevo Like",
+        body: message,
         reviewId: reviewId,
         likerId: likerId,
         reviewSnippet: reviewSnippet,
+        likerName: likerName,
+        likerAvatarUrl: likerAvatarUrl,
       },
     };
 
@@ -76,12 +96,18 @@ exports.sendLikeNotification = functions.firestore
     try {
       await admin.firestore()
         .collection("users").doc(authorUid)
-        .collection("notifications").add({
+        .collection("notifications")
+        .add({
           type: "review_like",
           reviewId: reviewId,
           likerId: likerId,
           likerName: likerName,
+          likerAvatarUrl: likerAvatarUrl,
+          actorId: likerId,
+          actorName: likerName,
+          actorImageUrl: likerAvatarUrl,
           reviewSnippet: reviewSnippet,
+          message: message,
           createdAt: admin.firestore.FieldValue.serverTimestamp(),
           read: false,
         });

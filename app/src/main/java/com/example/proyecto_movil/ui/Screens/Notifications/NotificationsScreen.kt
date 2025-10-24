@@ -131,7 +131,12 @@ private fun NotificationItem(
     val actorName = notification.actorName?.takeIf { it.isNotBlank() }
         ?: notification.likerName?.takeIf { it.isNotBlank() }
         ?: "Alguien"
-    val avatarUrl = notification.actorImageUrl?.takeIf { it.isNotBlank() }
+    val avatarUrl = sequenceOf(
+        notification.actorImageUrl,
+        notification.likerAvatarUrl
+    )
+        .mapNotNull { it?.takeIf { url -> url.isNotBlank() } }
+        .firstOrNull()
         ?: "https://placehold.co/100x100"
 
     val userId = notification.actorId?.takeIf { it.isNotBlank() }
