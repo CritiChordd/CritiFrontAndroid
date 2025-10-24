@@ -12,7 +12,6 @@ import com.example.proyecto_movil.data.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -32,8 +31,6 @@ class HomeViewModel @Inject constructor(
     val uiState: StateFlow<HomeState> = _uiState
 
     private var searchJob: Job? = null
-    private var lastSearchQuery: String? = null
-
     init {
         loadAlbumsAndReviews()
     }
@@ -104,7 +101,6 @@ class HomeViewModel @Inject constructor(
         if (!newActive) {
             searchJob?.cancel()
             searchJob = null
-            lastSearchQuery = null
         }
     }
 
@@ -123,17 +119,11 @@ class HomeViewModel @Inject constructor(
                     isSearching = false
                 )
             }
-            lastSearchQuery = null
-            return
-        }
-
-        if (normalizedQuery == lastSearchQuery) {
             return
         }
 
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
-            lastSearchQuery = normalizedQuery
             _uiState.update {
                 it.copy(
                     isSearching = true,
@@ -141,14 +131,37 @@ class HomeViewModel @Inject constructor(
                 )
             }
 
-            delay(250)
+            val currentAlbums = _uiState.value.albumList
+            val albumMatchesDeferred = async(Dispatchers.Default) {
+                findAlbumMatches(normalizedQuery, currentAlbums)
+            }
+            val usersResultDeferred = async(Dispatchers.IO) {
+                userRepository.searchUsersByName(normalizedQuery, limit = 8)
+            }
 
-            val albumMatches = findAlbumMatches(normalizedQuery)
+            val albumMatches = albumMatchesDeferred.await()
             _uiState.update {
                 it.copy(searchAlbumResults = albumMatches)
             }
 
-            userRepository.searchUsersByName(normalizedQuery, limit = 8).fold(
+            val usersResult = try {
+                usersResultDeferred.await()
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        searchUserResults = emptyList(),
+                        isSearching = false,
+                        searchError = if (albumMatches.isEmpty()) {
+                            e.message ?: "Error buscando usuarios"
+                        } else {
+                            null
+                        }
+                    )
+                }
+                return@launch
+            }
+
+            usersResult.fold(
                 onSuccess = { users ->
                     _uiState.update {
                         it.copy(
@@ -167,7 +180,11 @@ class HomeViewModel @Inject constructor(
                         it.copy(
                             searchUserResults = emptyList(),
                             isSearching = false,
-                            searchError = e.message ?: "Error buscando usuarios"
+                            searchError = if (albumMatches.isEmpty()) {
+                                e.message ?: "Error buscando usuarios"
+                            } else {
+                                null
+                            }
                         )
                     }
                 }
@@ -178,7 +195,6 @@ class HomeViewModel @Inject constructor(
     fun clearSearch() {
         searchJob?.cancel()
         searchJob = null
-        lastSearchQuery = null
         _uiState.update {
             it.copy(
                 searchQuery = "",
@@ -203,7 +219,6 @@ class HomeViewModel @Inject constructor(
                 searchError = null
             )
         }
-        lastSearchQuery = null
     }
 
     fun onAlbumResultClicked(album: AlbumInfo) {
@@ -219,17 +234,19 @@ class HomeViewModel @Inject constructor(
                 searchError = null
             )
         }
-        lastSearchQuery = null
     }
 
     fun consumeNavigateToUser() =
         _uiState.update { it.copy(navigateToUserId = null) }
 
-    private fun findAlbumMatches(query: String): List<AlbumInfo> {
+    private fun findAlbumMatches(
+        query: String,
+        albums: List<AlbumInfo>
+    ): List<AlbumInfo> {
         if (query.isBlank()) return emptyList()
 
         val lowerQuery = query.lowercase()
-        return _uiState.value.albumList.filter { album ->
+        return albums.filter { album ->
             album.title.lowercase().contains(lowerQuery) ||
                 album.artist.name.lowercase().contains(lowerQuery)
         }.take(8)
