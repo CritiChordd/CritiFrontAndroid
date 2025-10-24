@@ -61,6 +61,7 @@ fun AppNavHost(
     modifier: Modifier = Modifier
 ) {
     NavHost(
+        //si
         navController = navController,
         startDestination = startDestination,
         modifier = modifier
