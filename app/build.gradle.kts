@@ -95,7 +95,8 @@ dependencies {
     kapt("com.google.dagger:hilt-android-compiler:2.52")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
 
-
+    // SplashScreen
+    implementation("androidx.core:core-splashscreen:1.0.1")
 
 
     // --- Firebase ---

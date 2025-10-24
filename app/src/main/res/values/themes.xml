@@ -2,4 +2,16 @@
 <resources>
 
     <style name="Theme.Proyecto_movil" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.MyApp.Splash" parent="Theme.SplashScreen">
+        <!-- Ícono central del splash (vector o animado si lo deseas) -->
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <!-- Color de fondo del splash -->
+        <item name="windowSplashScreenBackground">@color/white</item>
+        <!-- Tema que tendrá la app inmediatamente después del splash -->
+        <item name="postSplashScreenTheme">@style/Theme.Proyecto_movil</item>
+    </style>
+
 </resources>
+
+
+
