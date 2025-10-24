@@ -11,11 +11,14 @@ import com.example.proyecto_movil.data.repository.ReviewRepository
 import com.example.proyecto_movil.data.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
@@ -41,11 +44,16 @@ class HomeViewModel @Inject constructor(
             try {
                 Log.d("HomeViewModel", "🚀 Cargando álbumes y reseñas desde el backend...")
 
-                val albumsResult = albumRepository.getAllAlbums()
-                val reviewsResult = reviewRepository.getAllReviews()
+                val (albumsResult, reviewsResult) = withContext(Dispatchers.IO) {
+                    val albumsDeferred = async { albumRepository.getAllAlbums() }
+                    val reviewsDeferred = async { reviewRepository.getAllReviews() }
+                    albumsDeferred.await() to reviewsDeferred.await()
+                }
 
                 val albums = albumsResult.getOrDefault(emptyList())
                 val reviews = reviewsResult.getOrDefault(emptyList())
+                val newReleases = filterNewReleases(albums)
+                val popularAlbums = calculatePopularAlbums(albums, reviews)
 
                 Log.d("HomeViewModel", "✅ Álbumes cargados: ${albums.size}")
                 Log.d("HomeViewModel", "✅ Reseñas cargadas: ${reviews.size}")
@@ -53,7 +61,9 @@ class HomeViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         albumList = albums,
-                        reviewList = reviews
+                        reviewList = reviews,
+                        newReleases = newReleases,
+                        popularAlbums = popularAlbums
                     )
                 }
 
@@ -215,33 +225,6 @@ class HomeViewModel @Inject constructor(
     fun consumeNavigateToUser() =
         _uiState.update { it.copy(navigateToUserId = null) }
 
-    /** 🔹 Filtrar lanzamientos recientes */
-    fun getNewReleases(): List<AlbumInfo> =
-        uiState.value.albumList.filter { it.year.toIntOrNull() ?: 0 >= 2023 }
-
-    /** 🔹 Ordenar álbumes por puntaje promedio */
-    fun getPopularAlbums(): List<AlbumInfo> {
-        val reviews = uiState.value.reviewList
-        val albums = uiState.value.albumList
-
-        if (reviews.isEmpty() || albums.isEmpty()) return albums
-
-        // Calcular el promedio por álbum
-        val avgScores: Map<Int, Double> = reviews
-            .groupBy { it.albumId }
-            .mapValues { (_, list) ->
-                list.mapNotNull { it.score }.average()
-            }
-
-        // Log de control
-        avgScores.entries.forEach {
-            Log.d("HomeVM", "⭐ Album ${it.key} promedio ${"%.2f".format(it.value)}")
-        }
-
-        // Ordenar los álbumes según su promedio
-        return albums.sortedByDescending { avgScores[it.id] ?: 0.0 }
-    }
-
     private fun findAlbumMatches(query: String): List<AlbumInfo> {
         if (query.isBlank()) return emptyList()
 
@@ -250,5 +233,27 @@ class HomeViewModel @Inject constructor(
             album.title.lowercase().contains(lowerQuery) ||
                 album.artist.name.lowercase().contains(lowerQuery)
         }.take(8)
+    }
+
+    private fun filterNewReleases(albums: List<AlbumInfo>): List<AlbumInfo> =
+        albums.filter { it.year.toIntOrNull() ?: 0 >= 2023 }
+
+    private fun calculatePopularAlbums(
+        albums: List<AlbumInfo>,
+        reviews: List<ReviewInfo>
+    ): List<AlbumInfo> {
+        if (albums.isEmpty() || reviews.isEmpty()) return albums
+
+        val avgScores: Map<Int, Double> = reviews
+            .groupBy { it.albumId }
+            .mapValues { (_, list) ->
+                list.mapNotNull { it.score }.average()
+            }
+
+        avgScores.entries.forEach {
+            Log.d("HomeVM", "⭐ Album ${it.key} promedio ${"%.2f".format(it.value)}")
+        }
+
+        return albums.sortedByDescending { avgScores[it.id] ?: 0.0 }
     }
 }

@@ -86,7 +86,7 @@ fun HomeScreen(
             item {
                 SectionRow(
                     title = "Novedades",
-                    albums = viewModel.getNewReleases(),
+                    albums = state.newReleases,
                     onAlbumClick = { album -> viewModel.onAlbumClicked(album) }
                 )
             }
@@ -104,7 +104,7 @@ fun HomeScreen(
             item {
                 SectionRow(
                     title = "Popular entre amigos",
-                    albums = viewModel.getPopularAlbums(),
+                    albums = state.popularAlbums,
                     onAlbumClick = { album -> viewModel.onAlbumClicked(album) }
                 )
             }

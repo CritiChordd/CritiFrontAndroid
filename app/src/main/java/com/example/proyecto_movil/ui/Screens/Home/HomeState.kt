@@ -6,6 +6,8 @@ import com.example.proyecto_movil.data.UserInfo
 
 data class HomeState(
     val albumList: List<AlbumInfo> = emptyList(),
+    val newReleases: List<AlbumInfo> = emptyList(),
+    val popularAlbums: List<AlbumInfo> = emptyList(),
     val searchQuery: String = "",
     val reviewList: List<ReviewInfo> = emptyList(),
 
