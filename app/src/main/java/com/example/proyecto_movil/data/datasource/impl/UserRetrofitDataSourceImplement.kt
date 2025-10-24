@@ -1,12 +1,11 @@
 package com.example.proyecto_movil.data.datasource.impl.retrofit
 
-import com.example.proyecto_movil.data.UserInfo
 import com.example.proyecto_movil.data.datasource.UserRemoteDataSource
 import com.example.proyecto_movil.data.datasource.services.UserRetrofitService
 import com.example.proyecto_movil.data.dtos.RegisterUserDto
 import com.example.proyecto_movil.data.dtos.ReviewDto
 import com.example.proyecto_movil.data.dtos.UpdateUserDto
-import com.example.proyecto_movil.data.dtos.toUserUI
+import com.example.proyecto_movil.data.dtos.UserProfileDto
 import javax.inject.Inject
 
 /**
@@ -18,20 +17,14 @@ class UserRetrofitDataSourceImpl @Inject constructor(
 ) : UserRemoteDataSource {
 
     /** Obtiene un usuario por ID */
-    override suspend fun getUserById(id: String): UserInfo {
-        return service.getUserById(id).toUserUI()
-    }
+    override suspend fun getUserById(id: String): UserProfileDto = service.getUserById(id)
 
     /** Obtiene las reseñas de un usuario */
-    override suspend fun getUserReviews(id: String): List<ReviewDto> {
-        return service.getUserReviews(id)
-    }
+    override suspend fun getUserReviews(id: String): List<ReviewDto> = service.getUserReviews(id)
 
     /** Actualiza la información de un usuario */
-    override suspend fun updateUser(id: String, userDto: UpdateUserDto): UserInfo {
-        val dto = service.updateUser(id, userDto)
-        return dto.toUserUI()
-    }
+    override suspend fun updateUser(id: String, userDto: UpdateUserDto): UserProfileDto =
+        service.updateUser(id, userDto)
 
     override suspend fun registerUser(registerUserDto: RegisterUserDto, userId: String){
         //to-do

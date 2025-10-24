@@ -57,10 +57,10 @@ class UserRepository(
     ): Result<UserInfo> = withContext(Dispatchers.IO) {
         try {
             // (Opcional) API – corrige el nombre del parámetro: userDto
-            runCatching {
+            try {
                 val dto = UpdateUserDto(username = username, bio = bio, profile_pic = profilePic)
                 userRemoteDataSource.updateUser(id = id, userDto = dto) // ← FIX
-            }
+            } catch (_: Throwable) { /* ignorado intencionalmente */ }
 
             // Firestore
             val updated = userFirestoreDataSource.updateUser(
