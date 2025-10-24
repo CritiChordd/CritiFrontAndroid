@@ -183,7 +183,7 @@ private fun SearchSection(
                 }
                 Text(
                     text = "Explora usuarios y álbumes",
-                    style = MaterialTheme.typography.headlineSmall,
+                    style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onBackground
                 )
             }

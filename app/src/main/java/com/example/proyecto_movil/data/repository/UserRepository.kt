@@ -7,8 +7,9 @@ import com.example.proyecto_movil.data.dtos.UpdateUserDto
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
+import javax.inject.Inject
 
-class UserRepository(
+class UserRepository @Inject constructor(
     private val userRemoteDataSource: UserRetrofitDataSourceImpl,
     private val userFirestoreDataSource: UserFirestoreDataSourceImpl
 ) {
