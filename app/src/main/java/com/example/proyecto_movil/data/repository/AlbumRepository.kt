@@ -1,6 +1,5 @@
 package com.example.proyecto_movil.data.repository
 
-import android.util.Log
 import com.example.proyecto_movil.data.AlbumInfo
 import com.example.proyecto_movil.data.datasource.AlbumRemoteDataSource
 import com.example.proyecto_movil.data.dtos.CreateAlbumDto
@@ -15,7 +14,7 @@ class AlbumRepository @Inject constructor(
             val albums = albumRemoteDataSource.getAllAlbums()
             Result.success(albums)
         } catch (e: Exception) {
-            Log.e("AlbumRepository", "Error en getAllAlbums: ${e.message}")
+            println("AlbumRepository - Error en getAllAlbums: ${e.message}")
             Result.failure(e)
         }
     }
@@ -25,7 +24,7 @@ class AlbumRepository @Inject constructor(
             val album = albumRemoteDataSource.getAlbumById(id)
             Result.success(album)
         } catch (e: Exception) {
-            Log.e("AlbumRepository", "Error en getAlbumById: ${e.message}")
+            println("AlbumRepository - Error en getAlbumById: ${e.message}")
             Result.failure(e)
         }
     }
@@ -35,7 +34,7 @@ class AlbumRepository @Inject constructor(
             val album = albumRemoteDataSource.createAlbum(request)
             Result.success(album)
         } catch (e: Exception) {
-            Log.e("AlbumRepository", "Error en createAlbum: ${e.message}")
+            println("AlbumRepository - Error en createAlbum: ${e.message}")
             Result.failure(e)
         }
     }

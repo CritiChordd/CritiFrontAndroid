@@ -37,6 +37,7 @@ import coil.compose.AsyncImage
 import com.example.proyecto_movil.R
 import com.example.proyecto_movil.data.AlbumInfo
 import com.example.proyecto_movil.data.UserInfo
+import com.example.proyecto_movil.ui.Screens.Home.HomeSearchResult
 import com.example.proyecto_movil.ui.Screens.Home.HomeViewModel
 import com.example.proyecto_movil.ui.utils.ScreenBackground
 import com.example.proyecto_movil.ui.utils.AlbumCard
@@ -74,6 +75,7 @@ fun HomeScreen(
                     onQueryChange = viewModel::onSearchQueryChanged,
                     onClearQuery = viewModel::clearSearch,
                     onUserClick = viewModel::onUserResultClicked,
+                    onAlbumClick = viewModel::onAlbumResultClicked,
                     onNotificationsClick = onNotificationsClick,
                     onFollowingFeedClick = onFollowingFeedClick   // ← NUEVO
                 )
@@ -131,12 +133,13 @@ private fun SearchSection(
     isSearchActive: Boolean,
     searchQuery: String,
     isSearching: Boolean,
-    results: List<UserInfo>,
+    results: List<HomeSearchResult>,
     errorMessage: String?,
     onToggleSearch: () -> Unit,
     onQueryChange: (String) -> Unit,
     onClearQuery: () -> Unit,
     onUserClick: (UserInfo) -> Unit,
+    onAlbumClick: (AlbumInfo) -> Unit,
     onNotificationsClick: () -> Unit,
     onFollowingFeedClick: () -> Unit       // ← NUEVO
 ) {
@@ -179,15 +182,15 @@ private fun SearchSection(
                     )
                 }
                 Text(
-                    text = "Explora usuarios",
-                    style = MaterialTheme.typography.headlineSmall,
+                    text = "Explora usuarios y álbumes",
+                    style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onBackground
                 )
             }
             IconButton(onClick = onToggleSearch) {
                 Icon(
                     imageVector = if (isSearchActive) Icons.Filled.Close else Icons.Filled.Search,
-                    contentDescription = if (isSearchActive) "Cerrar búsqueda" else "Buscar usuarios"
+                    contentDescription = if (isSearchActive) "Cerrar búsqueda" else "Buscar usuarios o álbumes"
                 )
             }
         }
@@ -199,7 +202,7 @@ private fun SearchSection(
                 modifier = Modifier
                     .fillMaxWidth()
                     .focusRequester(focusRequester),
-                label = { Text("Buscar por nombre o usuario") },
+                label = { Text("Buscar por nombre, usuario o álbum") },
                 trailingIcon = {
                     if (searchQuery.isNotBlank()) {
                         IconButton(onClick = onClearQuery) {
@@ -224,8 +227,11 @@ private fun SearchSection(
             when {
                 results.isNotEmpty() -> {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        results.forEach { user ->
-                            UserResultRow(user = user, onClick = onUserClick)
+                        results.forEach { result ->
+                            when (result) {
+                                is HomeSearchResult.User -> UserResultRow(user = result.user, onClick = onUserClick)
+                                is HomeSearchResult.Album -> AlbumResultRow(album = result.album, onClick = onAlbumClick)
+                            }
                         }
                     }
                 }
@@ -237,6 +243,45 @@ private fun SearchSection(
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AlbumResultRow(album: AlbumInfo, onClick: (AlbumInfo) -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp)
+                .clickable { onClick(album) },
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            AsyncImage(
+                model = album.coverUrl.ifBlank { "https://placehold.co/100x100" },
+                contentDescription = "Carátula de ${album.title}",
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(MaterialTheme.shapes.medium),
+                contentScale = ContentScale.Crop
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = album.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = album.artist.name,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }

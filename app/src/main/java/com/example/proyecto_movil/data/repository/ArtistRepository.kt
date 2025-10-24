@@ -1,6 +1,5 @@
 package com.example.proyecto_movil.data.repository
 
-import android.util.Log
 import com.example.proyecto_movil.data.ArtistInfo
 import com.example.proyecto_movil.data.datasource.ArtistRemoteDataSource
 import javax.inject.Inject
@@ -14,7 +13,7 @@ class ArtistRepository @Inject constructor(
             val artists = artistRemoteDataSource.getAllArtists()
             Result.success(artists)
         } catch (e: Exception) {
-            Log.e("ArtistRepository", "Error en getAllArtists: ${e.message}")
+            println("ArtistRepository - Error en getAllArtists: ${e.message}")
             Result.failure(e)
         }
     }
@@ -24,7 +23,7 @@ class ArtistRepository @Inject constructor(
             val artist = artistRemoteDataSource.getArtistById(id)
             Result.success(artist)
         } catch (e: Exception) {
-            Log.e("ArtistRepository", "Error en getArtistById: ${e.message}")
+            println("ArtistRepository - Error en getArtistById: ${e.message}")
             Result.failure(e)
         }
     }
