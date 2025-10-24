@@ -83,9 +83,10 @@ class HomeViewModel @Inject constructor(
             it.copy(
                 isSearchActive = newActive,
                 searchQuery = if (newActive) it.searchQuery else "",
-                searchResults = if (newActive) it.searchResults else emptyList(),
+                userSearchResults = emptyList(),
+                albumSearchResults = emptyList(),
                 searchError = null,
-                isSearching = if (newActive) it.isSearching else false
+                isSearching = false
             )
         }
         if (!newActive) {
@@ -97,31 +98,57 @@ class HomeViewModel @Inject constructor(
     fun onSearchQueryChanged(query: String) {
         _uiState.update { it.copy(searchQuery = query) }
 
-        if (query.length < 2) {
+        val trimmedQuery = query.trim()
+
+        if (trimmedQuery.length < 2) {
             searchJob?.cancel()
-            _uiState.update { it.copy(searchResults = emptyList(), searchError = null, isSearching = false) }
+            _uiState.update {
+                it.copy(
+                    userSearchResults = emptyList(),
+                    albumSearchResults = emptyList(),
+                    searchError = null,
+                    isSearching = false
+                )
+            }
             return
         }
 
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
-            _uiState.update { it.copy(isSearching = true, searchError = null) }
-            userRepository.searchUsersByName(query, limit = 8).fold(
+            val albumMatches = filterAlbums(trimmedQuery)
+
+            _uiState.update {
+                it.copy(
+                    isSearching = true,
+                    searchError = null,
+                    albumSearchResults = albumMatches
+                )
+            }
+
+            userRepository.searchUsersByName(trimmedQuery, limit = 8).fold(
                 onSuccess = { users ->
+                    val hasResults = users.isNotEmpty() || albumMatches.isNotEmpty()
                     _uiState.update {
                         it.copy(
-                            searchResults = users,
+                            userSearchResults = users,
+                            albumSearchResults = albumMatches,
                             isSearching = false,
-                            searchError = if (users.isEmpty()) "No se encontraron usuarios" else null
+                            searchError = if (hasResults) null else "No se encontraron resultados"
                         )
                     }
                 },
                 onFailure = { e ->
+                    val errorMessage = if (albumMatches.isEmpty()) {
+                        e.message ?: "Error buscando usuarios"
+                    } else {
+                        null
+                    }
                     _uiState.update {
                         it.copy(
-                            searchResults = emptyList(),
+                            userSearchResults = emptyList(),
+                            albumSearchResults = albumMatches,
                             isSearching = false,
-                            searchError = e.message ?: "Error buscando usuarios"
+                            searchError = errorMessage
                         )
                     }
                 }
@@ -135,7 +162,8 @@ class HomeViewModel @Inject constructor(
         _uiState.update {
             it.copy(
                 searchQuery = "",
-                searchResults = emptyList(),
+                userSearchResults = emptyList(),
+                albumSearchResults = emptyList(),
                 searchError = null,
                 isSearching = false
             )
@@ -149,9 +177,26 @@ class HomeViewModel @Inject constructor(
             it.copy(
                 navigateToUserId = user.id,
                 isSearchActive = false,
-                searchResults = emptyList(),
+                userSearchResults = emptyList(),
+                albumSearchResults = emptyList(),
                 searchQuery = "",
                 searchError = null
+            )
+        }
+    }
+
+    fun onAlbumResultClicked(album: AlbumInfo) {
+        searchJob?.cancel()
+        searchJob = null
+        _uiState.update {
+            it.copy(
+                openAlbum = album,
+                isSearchActive = false,
+                userSearchResults = emptyList(),
+                albumSearchResults = emptyList(),
+                searchQuery = "",
+                searchError = null,
+                isSearching = false
             )
         }
     }
@@ -184,5 +229,17 @@ class HomeViewModel @Inject constructor(
 
         // Ordenar los álbumes según su promedio
         return albums.sortedByDescending { avgScores[it.id] ?: 0.0 }
+    }
+
+    private fun filterAlbums(query: String): List<AlbumInfo> {
+        if (query.isBlank()) return emptyList()
+
+        val normalizedQuery = query.lowercase()
+
+        return _uiState.value.albumList.filter { album ->
+            val titleMatch = album.title.contains(normalizedQuery, ignoreCase = true)
+            val artistMatch = album.artist.name.contains(normalizedQuery, ignoreCase = true)
+            titleMatch || artistMatch
+        }.take(8)
     }
 }

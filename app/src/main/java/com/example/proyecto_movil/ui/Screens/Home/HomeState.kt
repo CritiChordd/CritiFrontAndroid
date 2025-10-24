@@ -11,7 +11,8 @@ data class HomeState(
 
     val isSearchActive: Boolean = false,
     val isSearching: Boolean = false,
-    val searchResults: List<UserInfo> = emptyList(),
+    val userSearchResults: List<UserInfo> = emptyList(),
+    val albumSearchResults: List<AlbumInfo> = emptyList(),
     val searchError: String? = null,
 
     val navigateToProfile: Boolean = false,

@@ -9,8 +9,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -68,11 +68,13 @@ fun HomeScreen(
                     isSearchActive = state.isSearchActive,
                     searchQuery = state.searchQuery,
                     isSearching = state.isSearching,
-                    results = state.searchResults,
+                    userResults = state.userSearchResults,
+                    albumResults = state.albumSearchResults,
                     errorMessage = state.searchError,
                     onToggleSearch = viewModel::toggleSearch,
                     onQueryChange = viewModel::onSearchQueryChanged,
                     onClearQuery = viewModel::clearSearch,
+                    onAlbumClick = viewModel::onAlbumResultClicked,
                     onUserClick = viewModel::onUserResultClicked,
                     onNotificationsClick = onNotificationsClick,
                     onFollowingFeedClick = onFollowingFeedClick   // ← NUEVO
@@ -131,11 +133,13 @@ private fun SearchSection(
     isSearchActive: Boolean,
     searchQuery: String,
     isSearching: Boolean,
-    results: List<UserInfo>,
+    userResults: List<UserInfo>,
+    albumResults: List<AlbumInfo>,
     errorMessage: String?,
     onToggleSearch: () -> Unit,
     onQueryChange: (String) -> Unit,
     onClearQuery: () -> Unit,
+    onAlbumClick: (AlbumInfo) -> Unit,
     onUserClick: (UserInfo) -> Unit,
     onNotificationsClick: () -> Unit,
     onFollowingFeedClick: () -> Unit       // ← NUEVO
@@ -178,16 +182,25 @@ private fun SearchSection(
                         contentDescription = "Feed de seguidos"
                     )
                 }
-                Text(
-                    text = "Explora usuarios",
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
+                Column {
+                    Text(
+                        text = "Explora",
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    if (isSearchActive) {
+                        Text(
+                            text = "Usuarios y álbumes",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
             }
             IconButton(onClick = onToggleSearch) {
                 Icon(
                     imageVector = if (isSearchActive) Icons.Filled.Close else Icons.Filled.Search,
-                    contentDescription = if (isSearchActive) "Cerrar búsqueda" else "Buscar usuarios"
+                    contentDescription = if (isSearchActive) "Cerrar búsqueda" else "Buscar usuarios y álbumes"
                 )
             }
         }
@@ -199,7 +212,7 @@ private fun SearchSection(
                 modifier = Modifier
                     .fillMaxWidth()
                     .focusRequester(focusRequester),
-                label = { Text("Buscar por nombre o usuario") },
+                label = { Text("Buscar usuarios o álbumes") },
                 trailingIcon = {
                     if (searchQuery.isNotBlank()) {
                         IconButton(onClick = onClearQuery) {
@@ -222,10 +235,31 @@ private fun SearchSection(
             }
 
             when {
-                results.isNotEmpty() -> {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        results.forEach { user ->
-                            UserResultRow(user = user, onClick = onUserClick)
+                albumResults.isNotEmpty() || userResults.isNotEmpty() -> {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        if (albumResults.isNotEmpty()) {
+                            Text(
+                                text = "Álbumes",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                albumResults.forEach { album ->
+                                    AlbumResultRow(album = album, onClick = onAlbumClick)
+                                }
+                            }
+                        }
+                        if (userResults.isNotEmpty()) {
+                            Text(
+                                text = "Usuarios",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                userResults.forEach { user ->
+                                    UserResultRow(user = user, onClick = onUserClick)
+                                }
+                            }
                         }
                     }
                 }
@@ -237,6 +271,45 @@ private fun SearchSection(
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AlbumResultRow(album: AlbumInfo, onClick: (AlbumInfo) -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp)
+                .clickable { onClick(album) },
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            AsyncImage(
+                model = album.coverUrl,
+                contentDescription = "Portada del álbum ${album.title}",
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(MaterialTheme.shapes.medium),
+                contentScale = ContentScale.Crop
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = album.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "${album.artist.name} • ${album.year}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }
