@@ -10,12 +10,10 @@ import com.example.proyecto_movil.data.repository.UserRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 private const val TAG = "ReviewDetailVM"
@@ -37,7 +35,6 @@ class ReviewDetailViewModel @Inject constructor(
     private var currentReviewId: String = ""
     private var currentUserId: String = ""
     private var cachedCurrentUserInfo: UserInfo? = null
-    private var isTogglingLike: Boolean = false
 
     fun load(reviewId: String, userId: String) {
         currentReviewId = reviewId
@@ -102,7 +99,7 @@ class ReviewDetailViewModel @Inject constructor(
     fun toggleLike() {
         val reviewId = currentReviewId
         val userId = currentUserId
-        if (reviewId.isBlank() || userId.isBlank() || isTogglingLike) return
+        if (reviewId.isBlank() || userId.isBlank()) return
 
         val wasLiked = _uiState.value.review?.liked == true
         val delta = if (wasLiked) -1 else +1
@@ -116,70 +113,61 @@ class ReviewDetailViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            isTogglingLike = true
-            try {
-                val res = withContext(Dispatchers.IO) {
-                    reviewRepository.sendOrDeleteReviewLike(reviewId, userId)
+            val res = reviewRepository.sendOrDeleteReviewLike(reviewId, userId)
+            res.exceptionOrNull()?.let {
+                Log.e(TAG, "toggleLike error", it)
+                _uiState.update { st ->
+                    val r = st.review
+                    st.copy(
+                        likes = (st.likes - delta).coerceAtLeast(0),
+                        review = r?.copy(liked = wasLiked, likesCount = (r?.likesCount ?: 0) - delta)
+                    )
                 }
-                res.exceptionOrNull()?.let {
-                    Log.e(TAG, "toggleLike error", it)
-                    _uiState.update { st ->
-                        val r = st.review
-                        st.copy(
-                            likes = (st.likes - delta).coerceAtLeast(0),
-                            review = r?.copy(liked = wasLiked, likesCount = (r?.likesCount ?: 0) - delta)
+            } ?: run {
+                // En caso de LIKE (no UNLIKE), crear notificación como con 'seguir'
+                if (!wasLiked) {
+                    val st = _uiState.value
+                    val review = st.review
+                    val authorUid = review?.firebaseUserId ?: review?.userId.orEmpty()
+                    val isSelf = authorUid.isNotBlank() && authorUid == userId
+                    if (review != null && authorUid.isNotBlank() && !isSelf) {
+                        // Obtener nombre del que dio like
+                        val likerInfo = ensureCurrentUserInfo(userId)
+                        val firebaseUser = FirebaseAuth.getInstance().currentUser
+                            ?.takeIf { it.uid == userId }
+
+                        val likerName = sequenceOf(
+                            likerInfo?.username,
+                            likerInfo?.name,
+                            firebaseUser?.displayName,
+                            firebaseUser?.email?.substringBefore('@')
                         )
-                    }
-                } ?: run {
-                    // En caso de LIKE (no UNLIKE), crear notificación como con 'seguir'
-                    if (!wasLiked) {
-                        val st = _uiState.value
-                        val review = st.review
-                        val authorUid = review?.firebaseUserId ?: review?.userId.orEmpty()
-                        val isSelf = authorUid.isNotBlank() && authorUid == userId
-                        if (review != null && authorUid.isNotBlank() && !isSelf) {
-                            // Obtener nombre del que dio like
-                            val likerInfo = withContext(Dispatchers.IO) { ensureCurrentUserInfo(userId) }
-                            val firebaseUser = FirebaseAuth.getInstance().currentUser
-                                ?.takeIf { it.uid == userId }
+                            .mapNotNull { it?.takeIf { name -> name.isNotBlank() } }
+                            .firstOrNull()
+                            ?: "Alguien"
 
-                            val likerName = sequenceOf(
-                                likerInfo?.username,
-                                likerInfo?.name,
-                                firebaseUser?.displayName,
-                                firebaseUser?.email?.substringBefore('@')
+                        val likerAvatarUrl = sequenceOf(
+                            likerInfo?.profileImageUrl,
+                            firebaseUser?.photoUrl?.toString()
+                        )
+                            .mapNotNull { it?.takeIf { url -> url.isNotBlank() } }
+                            .firstOrNull()
+                            .orEmpty()
+
+                        val snippet = review.content.takeIf { it.isNotBlank() }?.let { it.take(80) }
+
+                        runCatching {
+                            notificationsRepository.addLikeNotification(
+                                userId = authorUid,
+                                reviewId = review.id,
+                                likerId = userId,
+                                likerName = likerName,
+                                likerAvatarUrl = likerAvatarUrl,
+                                reviewSnippet = snippet
                             )
-                                .mapNotNull { it?.takeIf { name -> name.isNotBlank() } }
-                                .firstOrNull()
-                                ?: "Alguien"
-
-                            val likerAvatarUrl = sequenceOf(
-                                likerInfo?.profileImageUrl,
-                                firebaseUser?.photoUrl?.toString()
-                            )
-                                .mapNotNull { it?.takeIf { url -> url.isNotBlank() } }
-                                .firstOrNull()
-                                .orEmpty()
-
-                            val snippet = review.content.takeIf { it.isNotBlank() }?.let { it.take(80) }
-
-                            withContext(Dispatchers.IO) {
-                                runCatching {
-                                    notificationsRepository.addLikeNotification(
-                                        userId = authorUid,
-                                        reviewId = review.id,
-                                        likerId = userId,
-                                        likerName = likerName,
-                                        likerAvatarUrl = likerAvatarUrl,
-                                        reviewSnippet = snippet
-                                    )
-                                }
-                            }
                         }
                     }
                 }
-            } finally {
-                isTogglingLike = false
             }
         }
     }
