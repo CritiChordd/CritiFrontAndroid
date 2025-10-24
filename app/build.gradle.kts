@@ -138,6 +138,7 @@ dependencies {
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
     testImplementation("com.google.truth:truth:1.4.2")
     androidTestImplementation("com.google.truth:truth:1.4.2")
+    testImplementation("org.robolectric:robolectric:4.11.1")
 
     // Hilt testing
     androidTestImplementation("com.google.dagger:hilt-android-testing:2.52")
