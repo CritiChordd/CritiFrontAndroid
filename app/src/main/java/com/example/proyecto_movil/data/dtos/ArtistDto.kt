@@ -1,6 +1,5 @@
 package com.example.proyecto_movil.data.dtos
 // ArtistDto.kt
-import android.util.Log
 import com.google.gson.annotations.SerializedName
 import com.example.proyecto_movil.data.ArtistInfo
 
@@ -15,7 +14,6 @@ data class ArtistDto(
 )
 
 fun ArtistDto.toArtistInfo(): ArtistInfo {
-    Log.d("ArtistMapper", "🖼️ Artista: $name -> $imageUrl")
     return ArtistInfo(
         id = id,
         name = name ?: "Desconocido",
