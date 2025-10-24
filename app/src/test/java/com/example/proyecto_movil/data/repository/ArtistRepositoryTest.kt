@@ -14,7 +14,7 @@ private class FakeArtistRemoteDataSource : ArtistRemoteDataSource {
     override suspend fun getAllArtists(): List<ArtistInfo> = artists
 
     override suspend fun getArtistById(id: String): ArtistInfo =
-        artists.first { it.id == id }
+        artists.first { it.id.toString() == id }
 }
 
 class ArtistRepositoryTest {
@@ -35,7 +35,7 @@ class ArtistRepositoryTest {
 
     @Test
     fun getAllArtists_successReturnsList() = runTest {
-        fakeDataSource.artists.add(ArtistInfo(id = "1", name = "Artist", profileImageUrl = "url", genre = "Rock"))
+        fakeDataSource.artists.add(ArtistInfo(id = 1, name = "Artist", profileImageUrl = "url", genre = "Rock"))
 
         val result = repository.getAllArtists()
         assertThat(result.isSuccess).isTrue()
