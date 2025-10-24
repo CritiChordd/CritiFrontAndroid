@@ -103,25 +103,47 @@ class HomeViewModel @Inject constructor(
             return
         }
 
+        val normalizedQuery = query.trim().lowercase()
+        val albumMatches = if (normalizedQuery.isBlank()) {
+            emptyList()
+        } else {
+            uiState.value.albumList
+                .filter {
+                    it.title.lowercase().contains(normalizedQuery) ||
+                            it.artist.name.lowercase().contains(normalizedQuery)
+                }
+                .take(8)
+                .map(HomeSearchResult::Album)
+        }
+
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
             _uiState.update { it.copy(isSearching = true, searchError = null) }
             userRepository.searchUsersByName(query, limit = 8).fold(
                 onSuccess = { users ->
+                    val combined = buildList {
+                        addAll(albumMatches)
+                        addAll(users.map(HomeSearchResult::User))
+                    }
                     _uiState.update {
                         it.copy(
-                            searchResults = users,
+                            searchResults = combined,
                             isSearching = false,
-                            searchError = if (users.isEmpty()) "No se encontraron usuarios" else null
+                            searchError = if (combined.isEmpty()) "No se encontraron resultados" else null
                         )
                     }
                 },
                 onFailure = { e ->
+                    val errorMessage = if (albumMatches.isEmpty()) {
+                        e.message ?: "Error buscando usuarios"
+                    } else {
+                        null
+                    }
                     _uiState.update {
                         it.copy(
-                            searchResults = emptyList(),
+                            searchResults = albumMatches,
                             isSearching = false,
-                            searchError = e.message ?: "Error buscando usuarios"
+                            searchError = errorMessage ?: if (albumMatches.isEmpty()) "No se encontraron resultados" else null
                         )
                     }
                 }
@@ -148,6 +170,20 @@ class HomeViewModel @Inject constructor(
         _uiState.update {
             it.copy(
                 navigateToUserId = user.id,
+                isSearchActive = false,
+                searchResults = emptyList(),
+                searchQuery = "",
+                searchError = null
+            )
+        }
+    }
+
+    fun onAlbumResultClicked(album: AlbumInfo) {
+        searchJob?.cancel()
+        searchJob = null
+        _uiState.update {
+            it.copy(
+                openAlbum = album,
                 isSearchActive = false,
                 searchResults = emptyList(),
                 searchQuery = "",
