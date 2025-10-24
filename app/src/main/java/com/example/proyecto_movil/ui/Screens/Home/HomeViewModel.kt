@@ -83,7 +83,8 @@ class HomeViewModel @Inject constructor(
             it.copy(
                 isSearchActive = newActive,
                 searchQuery = if (newActive) it.searchQuery else "",
-                searchResults = if (newActive) it.searchResults else emptyList(),
+                searchUserResults = if (newActive) it.searchUserResults else emptyList(),
+                searchAlbumResults = if (newActive) it.searchAlbumResults else emptyList(),
                 searchError = null,
                 isSearching = if (newActive) it.isSearching else false
             )
@@ -97,29 +98,54 @@ class HomeViewModel @Inject constructor(
     fun onSearchQueryChanged(query: String) {
         _uiState.update { it.copy(searchQuery = query) }
 
-        if (query.length < 2) {
+        val normalizedQuery = query.trim()
+
+        if (normalizedQuery.length < 2) {
             searchJob?.cancel()
-            _uiState.update { it.copy(searchResults = emptyList(), searchError = null, isSearching = false) }
+            _uiState.update {
+                it.copy(
+                    searchUserResults = emptyList(),
+                    searchAlbumResults = emptyList(),
+                    searchError = null,
+                    isSearching = false
+                )
+            }
             return
         }
 
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
-            _uiState.update { it.copy(isSearching = true, searchError = null) }
-            userRepository.searchUsersByName(query, limit = 8).fold(
+            val initialAlbumMatches = findAlbumMatches(normalizedQuery)
+            _uiState.update {
+                it.copy(
+                    isSearching = true,
+                    searchError = null,
+                    searchAlbumResults = initialAlbumMatches
+                )
+            }
+
+            userRepository.searchUsersByName(normalizedQuery, limit = 8).fold(
                 onSuccess = { users ->
+                    val albumMatches = findAlbumMatches(normalizedQuery)
                     _uiState.update {
                         it.copy(
-                            searchResults = users,
+                            searchUserResults = users,
+                            searchAlbumResults = albumMatches,
                             isSearching = false,
-                            searchError = if (users.isEmpty()) "No se encontraron usuarios" else null
+                            searchError = if (users.isEmpty() && albumMatches.isEmpty()) {
+                                "No se encontraron resultados"
+                            } else {
+                                null
+                            }
                         )
                     }
                 },
                 onFailure = { e ->
+                    val albumMatches = findAlbumMatches(normalizedQuery)
                     _uiState.update {
                         it.copy(
-                            searchResults = emptyList(),
+                            searchUserResults = emptyList(),
+                            searchAlbumResults = albumMatches,
                             isSearching = false,
                             searchError = e.message ?: "Error buscando usuarios"
                         )
@@ -135,7 +161,8 @@ class HomeViewModel @Inject constructor(
         _uiState.update {
             it.copy(
                 searchQuery = "",
-                searchResults = emptyList(),
+                searchUserResults = emptyList(),
+                searchAlbumResults = emptyList(),
                 searchError = null,
                 isSearching = false
             )
@@ -149,7 +176,23 @@ class HomeViewModel @Inject constructor(
             it.copy(
                 navigateToUserId = user.id,
                 isSearchActive = false,
-                searchResults = emptyList(),
+                searchUserResults = emptyList(),
+                searchAlbumResults = emptyList(),
+                searchQuery = "",
+                searchError = null
+            )
+        }
+    }
+
+    fun onAlbumResultClicked(album: AlbumInfo) {
+        searchJob?.cancel()
+        searchJob = null
+        _uiState.update {
+            it.copy(
+                openAlbum = album,
+                isSearchActive = false,
+                searchUserResults = emptyList(),
+                searchAlbumResults = emptyList(),
                 searchQuery = "",
                 searchError = null
             )
@@ -184,5 +227,15 @@ class HomeViewModel @Inject constructor(
 
         // Ordenar los álbumes según su promedio
         return albums.sortedByDescending { avgScores[it.id] ?: 0.0 }
+    }
+
+    private fun findAlbumMatches(query: String): List<AlbumInfo> {
+        if (query.isBlank()) return emptyList()
+
+        val lowerQuery = query.lowercase()
+        return _uiState.value.albumList.filter { album ->
+            album.title.lowercase().contains(lowerQuery) ||
+                album.artist.name.lowercase().contains(lowerQuery)
+        }.take(8)
     }
 }

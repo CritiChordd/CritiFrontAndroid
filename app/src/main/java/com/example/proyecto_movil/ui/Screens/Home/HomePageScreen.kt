@@ -68,11 +68,13 @@ fun HomeScreen(
                     isSearchActive = state.isSearchActive,
                     searchQuery = state.searchQuery,
                     isSearching = state.isSearching,
-                    results = state.searchResults,
+                    albumResults = state.searchAlbumResults,
+                    userResults = state.searchUserResults,
                     errorMessage = state.searchError,
                     onToggleSearch = viewModel::toggleSearch,
                     onQueryChange = viewModel::onSearchQueryChanged,
                     onClearQuery = viewModel::clearSearch,
+                    onAlbumClick = viewModel::onAlbumResultClicked,
                     onUserClick = viewModel::onUserResultClicked,
                     onNotificationsClick = onNotificationsClick,
                     onFollowingFeedClick = onFollowingFeedClick   // ← NUEVO
@@ -131,11 +133,13 @@ private fun SearchSection(
     isSearchActive: Boolean,
     searchQuery: String,
     isSearching: Boolean,
-    results: List<UserInfo>,
+    albumResults: List<AlbumInfo>,
+    userResults: List<UserInfo>,
     errorMessage: String?,
     onToggleSearch: () -> Unit,
     onQueryChange: (String) -> Unit,
     onClearQuery: () -> Unit,
+    onAlbumClick: (AlbumInfo) -> Unit,
     onUserClick: (UserInfo) -> Unit,
     onNotificationsClick: () -> Unit,
     onFollowingFeedClick: () -> Unit       // ← NUEVO
@@ -179,7 +183,7 @@ private fun SearchSection(
                     )
                 }
                 Text(
-                    text = "Explora usuarios",
+                    text = "Explora usuarios y álbumes",
                     style = MaterialTheme.typography.headlineSmall,
                     color = MaterialTheme.colorScheme.onBackground
                 )
@@ -187,7 +191,7 @@ private fun SearchSection(
             IconButton(onClick = onToggleSearch) {
                 Icon(
                     imageVector = if (isSearchActive) Icons.Filled.Close else Icons.Filled.Search,
-                    contentDescription = if (isSearchActive) "Cerrar búsqueda" else "Buscar usuarios"
+                    contentDescription = if (isSearchActive) "Cerrar búsqueda" else "Buscar usuarios o álbumes"
                 )
             }
         }
@@ -199,7 +203,7 @@ private fun SearchSection(
                 modifier = Modifier
                     .fillMaxWidth()
                     .focusRequester(focusRequester),
-                label = { Text("Buscar por nombre o usuario") },
+                label = { Text("Buscar usuarios o álbumes") },
                 trailingIcon = {
                     if (searchQuery.isNotBlank()) {
                         IconButton(onClick = onClearQuery) {
@@ -221,22 +225,82 @@ private fun SearchSection(
                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
             }
 
-            when {
-                results.isNotEmpty() -> {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        results.forEach { user ->
-                            UserResultRow(user = user, onClick = onUserClick)
-                        }
+            val hasAlbumResults = albumResults.isNotEmpty()
+            val hasUserResults = userResults.isNotEmpty()
+
+            if (hasAlbumResults) {
+                Text(
+                    text = "Álbumes",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    albumResults.forEach { album ->
+                        AlbumResultRow(album = album, onClick = onAlbumClick)
                     }
                 }
-                errorMessage != null -> {
-                    val isInfo = errorMessage.contains("No se encontraron", ignoreCase = true)
-                    Text(
-                        text = errorMessage,
-                        color = if (isInfo) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodySmall
-                    )
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+
+            if (hasUserResults) {
+                Text(
+                    text = "Usuarios",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    userResults.forEach { user ->
+                        UserResultRow(user = user, onClick = onUserClick)
+                    }
                 }
+            }
+
+            if (!isSearching && !hasAlbumResults && !hasUserResults && errorMessage != null) {
+                val isInfo = errorMessage.contains("No se encontraron", ignoreCase = true)
+                Text(
+                    text = errorMessage,
+                    color = if (isInfo) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AlbumResultRow(album: AlbumInfo, onClick: (AlbumInfo) -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp)
+                .clickable { onClick(album) },
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            AsyncImage(
+                model = album.coverUrl.ifBlank { "https://placehold.co/100x100" },
+                contentDescription = "Carátula de ${album.title}",
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(MaterialTheme.shapes.medium),
+                contentScale = ContentScale.Crop
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = album.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = album.artist.name,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }
