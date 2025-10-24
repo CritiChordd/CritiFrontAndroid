@@ -10,11 +10,12 @@ import com.example.proyecto_movil.data.repository.AlbumRepository
 import com.example.proyecto_movil.data.repository.ReviewRepository
 import com.example.proyecto_movil.data.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.Job
 import javax.inject.Inject
 
 @HiltViewModel
@@ -28,6 +29,7 @@ class HomeViewModel @Inject constructor(
     val uiState: StateFlow<HomeState> = _uiState
 
     private var searchJob: Job? = null
+    private var lastSearchQuery: String? = null
 
     init {
         loadAlbumsAndReviews()
@@ -92,6 +94,7 @@ class HomeViewModel @Inject constructor(
         if (!newActive) {
             searchJob?.cancel()
             searchJob = null
+            lastSearchQuery = null
         }
     }
 
@@ -110,27 +113,36 @@ class HomeViewModel @Inject constructor(
                     isSearching = false
                 )
             }
+            lastSearchQuery = null
+            return
+        }
+
+        if (normalizedQuery == lastSearchQuery) {
             return
         }
 
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
-            val initialAlbumMatches = findAlbumMatches(normalizedQuery)
+            lastSearchQuery = normalizedQuery
             _uiState.update {
                 it.copy(
                     isSearching = true,
-                    searchError = null,
-                    searchAlbumResults = initialAlbumMatches
+                    searchError = null
                 )
+            }
+
+            delay(250)
+
+            val albumMatches = findAlbumMatches(normalizedQuery)
+            _uiState.update {
+                it.copy(searchAlbumResults = albumMatches)
             }
 
             userRepository.searchUsersByName(normalizedQuery, limit = 8).fold(
                 onSuccess = { users ->
-                    val albumMatches = findAlbumMatches(normalizedQuery)
                     _uiState.update {
                         it.copy(
                             searchUserResults = users,
-                            searchAlbumResults = albumMatches,
                             isSearching = false,
                             searchError = if (users.isEmpty() && albumMatches.isEmpty()) {
                                 "No se encontraron resultados"
@@ -141,11 +153,9 @@ class HomeViewModel @Inject constructor(
                     }
                 },
                 onFailure = { e ->
-                    val albumMatches = findAlbumMatches(normalizedQuery)
                     _uiState.update {
                         it.copy(
                             searchUserResults = emptyList(),
-                            searchAlbumResults = albumMatches,
                             isSearching = false,
                             searchError = e.message ?: "Error buscando usuarios"
                         )
@@ -158,6 +168,7 @@ class HomeViewModel @Inject constructor(
     fun clearSearch() {
         searchJob?.cancel()
         searchJob = null
+        lastSearchQuery = null
         _uiState.update {
             it.copy(
                 searchQuery = "",
@@ -182,6 +193,7 @@ class HomeViewModel @Inject constructor(
                 searchError = null
             )
         }
+        lastSearchQuery = null
     }
 
     fun onAlbumResultClicked(album: AlbumInfo) {
@@ -197,6 +209,7 @@ class HomeViewModel @Inject constructor(
                 searchError = null
             )
         }
+        lastSearchQuery = null
     }
 
     fun consumeNavigateToUser() =
