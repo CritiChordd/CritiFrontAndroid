@@ -15,6 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -30,7 +31,7 @@ import kotlinx.coroutines.flow.StateFlow
 @Composable
 fun RegisterScreen(
     viewModel: Any,
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier.testTag("register-screen"),
     onBack: () -> Unit = {},
     onRegister: (String, String, String) -> Unit = { _, _, _ -> },
     onLogin: () -> Unit = {}
