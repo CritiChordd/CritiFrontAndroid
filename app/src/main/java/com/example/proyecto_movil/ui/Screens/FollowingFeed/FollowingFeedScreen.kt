@@ -9,6 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.example.proyecto_movil.ui.components.ReviewCard
 
@@ -18,7 +19,8 @@ fun FollowingFeedScreen(
     state: FollowingFeedState,
     onBack: () -> Unit,
     onUserClick: (String) -> Unit,
-    onOpenReview: (String) -> Unit = {}
+    onOpenReview: (String) -> Unit = {},
+    modifier: Modifier = Modifier.testTag("followingFeedScreen")
 ) {
     Scaffold(
         topBar = {

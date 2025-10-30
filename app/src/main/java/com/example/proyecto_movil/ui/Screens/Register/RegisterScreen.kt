@@ -1,6 +1,7 @@
 package com.example.proyecto_movil.ui.Screens.Register
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -31,7 +32,7 @@ import kotlinx.coroutines.flow.StateFlow
 @Composable
 fun RegisterScreen(
     viewModel: Any,
-    modifier: Modifier = Modifier.testTag("register-screen"),
+    modifier: Modifier = Modifier.testTag("registerScreen"),
     onBack: () -> Unit = {},
     onRegister: (String, String, String) -> Unit = { _, _, _ -> },
     onLogin: () -> Unit = {}
@@ -61,7 +62,7 @@ fun RegisterScreen(
     val backgroundRes = if (isDark) R.drawable.fondocriti else R.drawable.fondocriti_light
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Mensajes
+    // Mensajes (Snackbar)
     LaunchedEffect(state.showMessage, state.errorMessage) {
         if (state.showMessage) {
             state.errorMessage?.let { msg ->
@@ -71,14 +72,16 @@ fun RegisterScreen(
         }
     }
 
-    // Navegación disparada por ViewModel (p. ej., tras registrarse)
+    // Navegación tras registro OK → ejecuta acción y vuelve al Login
     LaunchedEffect(state.navigateAfterRegister) {
         if (state.navigateAfterRegister) {
             onRegister(state.nombreUsuario, state.email, state.password)
             actualViewModel.consumeNavigation()
+            onLogin() // ← vuelve al login sin depender de otra flag
         }
     }
-    // Si tu VM emite "navigateToLogin", también lo respetamos
+
+    // Si el VM emite ir a login explícitamente, respétalo también
     LaunchedEffect(state.navigateToLogin) {
         if (state.navigateToLogin) {
             onLogin()
@@ -88,9 +91,10 @@ fun RegisterScreen(
 
     Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { padding ->
         Box(
-            modifier = modifier
+            modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .then(modifier) // aplica el modifier con el testTag
         ) {
             Image(
                 painter = painterResource(id = backgroundRes),
@@ -99,7 +103,7 @@ fun RegisterScreen(
                 contentScale = ContentScale.Crop
             )
 
-            // ← Volver (directo, sin pasar por VM)
+            // Volver
             IconButton(
                 onClick = onBack,
                 modifier = Modifier
@@ -109,8 +113,7 @@ fun RegisterScreen(
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Volver",
-                    tint = MaterialTheme.colorScheme.onSurface
+                    contentDescription = "Volver"
                 )
             }
 
@@ -128,7 +131,6 @@ fun RegisterScreen(
                 Spacer(Modifier.height(60.dp))
                 Registrate(texto = "Regístrate")
                 Spacer(Modifier.height(10.dp))
-
 
                 FormularioRegistro(
                     nombrePersona = state.nombrePersona,
@@ -153,12 +155,16 @@ fun RegisterScreen(
                 ) {
                     Checkbox(
                         checked = state.acceptedTerms,
-                        onCheckedChange = { actualViewModel.toggleAcceptedTerms() }
+                        onCheckedChange = { actualViewModel.toggleAcceptedTerms() },
+                        modifier = Modifier.testTag("check-terminos")
                     )
                     Spacer(Modifier.width(8.dp))
                     Terminos(
                         texto = "He leído y acepto los términos y condiciones",
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("terminos")
+                            .clickable { actualViewModel.toggleAcceptedTerms() }
                     )
                 }
 
@@ -170,11 +176,12 @@ fun RegisterScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp)
+                        .testTag("boton_registrarse-final")
                 )
 
                 Spacer(Modifier.height(30.dp))
 
-                // → Inicia sesión (directo, sin depender de flags)
+                // Ir a login directo
                 YatienesCuenta(
                     texto = "¿Ya tienes una cuenta? Inicia sesión",
                     onClick = onLogin
@@ -186,7 +193,7 @@ fun RegisterScreen(
     }
 }
 
-/* ---------- Formulario que faltaba ---------- */
+/* ---------- Formulario ---------- */
 @Composable
 private fun FormularioRegistro(
     nombrePersona: String,
@@ -210,7 +217,9 @@ private fun FormularioRegistro(
             onValueChange = onNombrePersonaChange,
             label = { Text("Nombre") },
             singleLine = true,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("txtNombre")
         )
 
         OutlinedTextField(
@@ -218,7 +227,9 @@ private fun FormularioRegistro(
             onValueChange = onNombreUsuarioChange,
             label = { Text("Nombre de usuario") },
             singleLine = true,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("txtNombreUsuario")
         )
 
         OutlinedTextField(
@@ -226,7 +237,9 @@ private fun FormularioRegistro(
             onValueChange = onEmailChange,
             label = { Text("Email") },
             singleLine = true,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("txtEmail")
         )
 
         OutlinedTextField(
@@ -246,6 +259,7 @@ private fun FormularioRegistro(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 8.dp)
+                .testTag("txtPassword")
         )
     }
 }
