@@ -128,7 +128,7 @@ fun setup() {
             composeRule.onAllNodesWithTag("userProfileScreen").fetchSemanticsNodes().isNotEmpty()
         }
         composeRule.onNodeWithTag("userProfileScreen").assertIsDisplayed()
-       
+
         composeRule.onNodeWithTag("backButton").performClick()
         composeRule.onNodeWithTag("Lista-amigos").performClick()
         composeRule.waitUntil(25000) {
