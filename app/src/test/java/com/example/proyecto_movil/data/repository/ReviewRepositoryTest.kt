@@ -4,7 +4,6 @@ import com.example.proyecto_movil.data.datasource.ReviewRemoteDataSource
 import com.example.proyecto_movil.data.dtos.CreateReviewDto
 import com.example.proyecto_movil.data.dtos.ReviewDto
 import com.google.common.truth.Truth.assertThat
-import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -141,7 +140,7 @@ class ReviewRepositoryTest {
     @Test
     fun createReview_marksDtoAsLowScoreWhenBelowThreshold() = runTest {
         val slot = slot<CreateReviewDto>()
-        coEvery { remoteDataSource.createReview(capture(slot)) } just Runs
+        coEvery { remoteDataSource.createReview(capture(slot)) } returns Unit
 
         val result = repository.createReview(
             content = "Regular",
@@ -165,7 +164,7 @@ class ReviewRepositoryTest {
     @Test
     fun createReview_marksDtoAsHighScoreWhenAboveThreshold() = runTest {
         val slot = slot<CreateReviewDto>()
-        coEvery { remoteDataSource.createReview(capture(slot)) } just Runs
+        coEvery { remoteDataSource.createReview(capture(slot)) } returns Unit
 
         repository.createReview(
             content = "Excelente",
@@ -184,7 +183,7 @@ class ReviewRepositoryTest {
     @Test
     fun createReview_usesEmptyUserIdWhenNullProvided() = runTest {
         val slot = slot<CreateReviewDto>()
-        coEvery { remoteDataSource.createReview(capture(slot)) } just Runs
+        coEvery { remoteDataSource.createReview(capture(slot)) } returns Unit
 
         repository.createReview(
             content = "Sin usuario",
@@ -202,7 +201,7 @@ class ReviewRepositoryTest {
     @Test
     fun createReview_setsFavoriteAndMatchingTimestamps() = runTest {
         val slot = slot<CreateReviewDto>()
-        coEvery { remoteDataSource.createReview(capture(slot)) } just Runs
+        coEvery { remoteDataSource.createReview(capture(slot)) } returns Unit
 
         repository.createReview(
             content = "Favorita",
