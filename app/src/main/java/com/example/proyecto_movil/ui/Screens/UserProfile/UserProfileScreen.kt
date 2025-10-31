@@ -26,6 +26,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import coil.compose.AsyncImage
 import com.example.proyecto_movil.R
@@ -56,7 +57,7 @@ fun UserProfileScreen(
     val isDark = isSystemInDarkTheme()
     val backgroundRes = if (isDark) R.drawable.fondocriti else R.drawable.fondocriti_light
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = Modifier.fillMaxSize().testTag("userProfileScreen")) {
         Image(
             painter = painterResource(id = backgroundRes),
             contentDescription = null,
@@ -80,6 +81,7 @@ fun UserProfileScreen(
                         modifier = Modifier
                             .size(28.dp)
                             .clickable { onBackClick() }
+                            .testTag("backButton")
                     )
                     Icon(
                         imageVector = Icons.Default.Settings,
@@ -209,8 +211,9 @@ fun UserProfileScreen(
                                         shape = RoundedCornerShape(50),
                                         colors = ButtonDefaults.buttonColors(
                                             containerColor = MaterialTheme.colorScheme.primary,
-                                            contentColor = MaterialTheme.colorScheme.onPrimary
-                                        )
+                                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                                        ),
+                                        modifier = Modifier.testTag("followButton")
                                     ) {
                                         Text(if (state.isFollowActionInProgress) "Actualizando..." else "Seguir")
                                     }

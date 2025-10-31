@@ -9,17 +9,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.People
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Text
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -32,6 +24,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.proyecto_movil.R
@@ -39,73 +32,80 @@ import com.example.proyecto_movil.data.AlbumInfo
 import com.example.proyecto_movil.data.UserInfo
 import com.example.proyecto_movil.ui.Screens.Home.HomeSearchResult
 import com.example.proyecto_movil.ui.Screens.Home.HomeViewModel
-import com.example.proyecto_movil.ui.utils.ScreenBackground
 import com.example.proyecto_movil.ui.utils.AlbumCard
+import com.example.proyecto_movil.ui.utils.ScreenBackground
 
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel,
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier.testTag("homeScreen"),
     onAlbumClick: (AlbumInfo) -> Unit = {},
     onReviewProfileImageClicked: (String) -> Unit = {},
     onNotificationsClick: () -> Unit = {},
-    onFollowingFeedClick: () -> Unit = {}      // ← NUEVO
+    onFollowingFeedClick: () -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsState()
 
     val isDark = isSystemInDarkTheme()
     val backgroundRes = if (isDark) R.drawable.fondocriti else R.drawable.fondocriti_light
 
-    ScreenBackground(backgroundRes = backgroundRes, modifier = modifier) {
-        LazyColumn(
-            modifier = Modifier
+    ScreenBackground(backgroundRes = backgroundRes) {
+        // APLICA el testTag de homeScreen aquí (¡garantizado!)
+        Box(
+            modifier = modifier
                 .fillMaxSize()
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp),
-            contentPadding = PaddingValues(bottom = 32.dp)
         ) {
-            item {
-                SearchSection(
-                    isSearchActive = state.isSearchActive,
-                    searchQuery = state.searchQuery,
-                    isSearching = state.isSearching,
-                    results = state.searchResults,
-                    errorMessage = state.searchError,
-                    onToggleSearch = viewModel::toggleSearch,
-                    onQueryChange = viewModel::onSearchQueryChanged,
-                    onClearQuery = viewModel::clearSearch,
-                    onUserClick = viewModel::onUserResultClicked,
-                    onAlbumClick = viewModel::onAlbumResultClicked,
-                    onNotificationsClick = onNotificationsClick,
-                    onFollowingFeedClick = onFollowingFeedClick   // ← NUEVO
-                )
-            }
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp),
+                contentPadding = PaddingValues(bottom = 32.dp)
+            ) {
+                item {
+                    SearchSection(
+                        isSearchActive = state.isSearchActive,
+                        searchQuery = state.searchQuery,
+                        isSearching = state.isSearching,
+                        results = state.searchResults,
+                        errorMessage = state.searchError,
+                        onToggleSearch = viewModel::toggleSearch,
+                        onQueryChange = viewModel::onSearchQueryChanged,
+                        onClearQuery = viewModel::clearSearch,
+                        onUserClick = viewModel::onUserResultClicked,
+                        onAlbumClick = viewModel::onAlbumResultClicked,
+                        onNotificationsClick = onNotificationsClick,
+                        onFollowingFeedClick = onFollowingFeedClick,
+                        modifier = Modifier.testTag("searchSection") // ← el test hace click aquí
+                    )
+                }
 
-            // 🔹 Sección: Novedades
-            item {
-                SectionRow(
-                    title = "Novedades",
-                    albums = viewModel.getNewReleases(),
-                    onAlbumClick = { album -> viewModel.onAlbumClicked(album) }
-                )
-            }
+                // 🔹 Sección: Novedades
+                item {
+                    SectionRow(
+                        title = "Novedades",
+                        albums = viewModel.getNewReleases(),
+                        onAlbumClick = { album -> viewModel.onAlbumClicked(album) }
+                    )
+                }
 
-            // 🔹 Sección: Nuevo entre amigos
-            item {
-                SectionRow(
-                    title = "Nuevo entre amigos",
-                    albums = state.albumList,
-                    onAlbumClick = { album -> viewModel.onAlbumClicked(album) }
-                )
-            }
+                // 🔹 Sección: Nuevo entre amigos
+                item {
+                    SectionRow(
+                        title = "Nuevo entre amigos",
+                        albums = state.albumList,
+                        onAlbumClick = { album -> viewModel.onAlbumClicked(album) }
+                    )
+                }
 
-            // 🔹 Sección: Popular entre amigos
-            item {
-                SectionRow(
-                    title = "Popular entre amigos",
-                    albums = viewModel.getPopularAlbums(),
-                    onAlbumClick = { album -> viewModel.onAlbumClicked(album) }
-                )
+                // 🔹 Sección: Popular entre amigos
+                item {
+                    SectionRow(
+                        title = "Popular entre amigos",
+                        albums = viewModel.getPopularAlbums(),
+                        onAlbumClick = { album -> viewModel.onAlbumClicked(album) }
+                    )
+                }
             }
         }
     }
@@ -141,7 +141,8 @@ private fun SearchSection(
     onUserClick: (UserInfo) -> Unit,
     onAlbumClick: (AlbumInfo) -> Unit,
     onNotificationsClick: () -> Unit,
-    onFollowingFeedClick: () -> Unit       // ← NUEVO
+    onFollowingFeedClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -155,8 +156,11 @@ private fun SearchSection(
         }
     }
 
+    // IMPORTANTE: el root usa *modifier* y es clickable para abrir la búsqueda (tu test hace click aquí)
     Column(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable { onToggleSearch() }, // abre/cierra búsqueda al tocar la sección
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Row(
@@ -174,8 +178,11 @@ private fun SearchSection(
                         contentDescription = "Ver notificaciones"
                     )
                 }
-                // ← NUEVO: Botón para abrir el feed de seguidos
-                IconButton(onClick = onFollowingFeedClick) {
+                // Botón para abrir el feed de seguidos (TAG en el IconButton, clickeable)
+                IconButton(
+                    onClick = onFollowingFeedClick,
+                    modifier = Modifier.testTag("Lista-amigos")
+                ) {
                     Icon(
                         imageVector = Icons.Filled.People,
                         contentDescription = "Feed de seguidos"
@@ -201,7 +208,8 @@ private fun SearchSection(
                 onValueChange = onQueryChange,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .focusRequester(focusRequester),
+                    .focusRequester(focusRequester)
+                    .testTag("searchTextField"),
                 label = { Text("Buscar por nombre, usuario o álbum") },
                 trailingIcon = {
                     if (searchQuery.isNotBlank()) {
@@ -229,8 +237,15 @@ private fun SearchSection(
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         results.forEach { result ->
                             when (result) {
-                                is HomeSearchResult.User -> UserResultRow(user = result.user, onClick = onUserClick)
-                                is HomeSearchResult.Album -> AlbumResultRow(album = result.album, onClick = onAlbumClick)
+                                is HomeSearchResult.User -> UserResultRow(
+                                    user = result.user,
+                                    onClick = onUserClick,
+                                    modifier = Modifier.testTag("userResult") // ← TAG en el nodo clickeable
+                                )
+                                is HomeSearchResult.Album -> AlbumResultRow(
+                                    album = result.album,
+                                    onClick = onAlbumClick
+                                )
                             }
                         }
                     }
@@ -288,14 +303,19 @@ private fun AlbumResultRow(album: AlbumInfo, onClick: (AlbumInfo) -> Unit) {
 }
 
 @Composable
-private fun UserResultRow(user: UserInfo, onClick: (UserInfo) -> Unit) {
+private fun UserResultRow(
+    user: UserInfo,
+    onClick: (UserInfo) -> Unit,
+    modifier: Modifier = Modifier
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
+        // PONEMOS el testTag en el nodo CLICKEABLE (Row)
         Row(
-            modifier = Modifier
+            modifier = modifier
                 .fillMaxWidth()
                 .padding(12.dp)
                 .clickable { onClick(user) },
