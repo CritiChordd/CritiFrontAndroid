@@ -52,6 +52,8 @@ import com.example.proyecto_movil.ui.Screens.FollowList.FollowListScreen
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.proyecto_movil.ui.Screens.FollowingFeed.FollowingFeedScreen
 import com.example.proyecto_movil.ui.Screens.FollowingFeed.FollowingFeedViewModel
+import com.example.proyecto_movil.ui.Screens.Rankings.RankingsScreen
+import com.example.proyecto_movil.ui.Screens.Rankings.RankingsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -134,6 +136,12 @@ fun AppNavHost(
                 onNotificationsClick = { navController.navigate(Screen.Notifications.route) },
                 onFollowingFeedClick = { navController.navigate(Screen.FollowingFeed.route) } // ← NUEVO
             )
+        }
+
+        /* ------------------ RANKINGS ------------------ */
+        composable(Screen.Rankings.route) {
+            val vm: RankingsViewModel = hiltViewModel()
+            RankingsScreen(viewModel = vm)
         }
 
         /* ------------------ PROFILE ------------------ */
