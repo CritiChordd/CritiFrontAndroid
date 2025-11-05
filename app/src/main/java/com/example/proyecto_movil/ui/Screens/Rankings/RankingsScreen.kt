@@ -5,6 +5,9 @@ import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,9 +27,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonRow
-import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -113,30 +113,62 @@ private fun RankingSelector(
     onSelected: (RankingCategory) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    SegmentedButtonRow(modifier = modifier.fillMaxWidth()) {
-        SegmentedButton(
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        RankingSelectorOption(
+            text = "Artistas",
             selected = selected == RankingCategory.ARTISTS,
             onClick = { onSelected(RankingCategory.ARTISTS) },
-            shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
-            colors = SegmentedButtonDefaults.colors(
-                activeContainerColor = MaterialTheme.colorScheme.primary,
-                activeContentColor = MaterialTheme.colorScheme.onPrimary,
-                inactiveContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
-                inactiveContentColor = MaterialTheme.colorScheme.onSurface
-            ),
-            label = { Text("Artistas", fontWeight = FontWeight.SemiBold) }
+            modifier = Modifier.weight(1f)
         )
-        SegmentedButton(
+        RankingSelectorOption(
+            text = "Álbumes",
             selected = selected == RankingCategory.ALBUMS,
             onClick = { onSelected(RankingCategory.ALBUMS) },
-            shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
-            colors = SegmentedButtonDefaults.colors(
-                activeContainerColor = MaterialTheme.colorScheme.primary,
-                activeContentColor = MaterialTheme.colorScheme.onPrimary,
-                inactiveContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
-                inactiveContentColor = MaterialTheme.colorScheme.onSurface
-            ),
-            label = { Text("Álbumes", fontWeight = FontWeight.SemiBold) }
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+@Composable
+private fun RankingSelectorOption(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val containerColor = if (selected) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
+    }
+    val contentColor = if (selected) {
+        MaterialTheme.colorScheme.onPrimary
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    }
+    val borderColor = if (selected) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
+    }
+
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(22.dp))
+            .background(containerColor)
+            .border(width = 1.dp, color = borderColor, shape = RoundedCornerShape(22.dp))
+            .clickable(onClick = onClick)
+            .padding(vertical = 12.dp, horizontal = 4.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            color = contentColor,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
+            fontSize = 16.sp
         )
     }
 }
