@@ -2,16 +2,26 @@ package com.example.proyecto_movil.ui.Screens.Rankings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.proyecto_movil.data.AlbumInfo
+import com.example.proyecto_movil.data.ArtistInfo
+import com.example.proyecto_movil.data.ReviewInfo
+import com.example.proyecto_movil.data.repository.AlbumRepository
+import com.example.proyecto_movil.data.repository.ReviewRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 @HiltViewModel
-class RankingsViewModel @Inject constructor() : ViewModel() {
+class RankingsViewModel @Inject constructor(
+    private val albumRepository: AlbumRepository,
+    private val reviewRepository: ReviewRepository
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(RankingsState(isLoading = true))
     val uiState: StateFlow<RankingsState> = _uiState.asStateFlow()
@@ -21,95 +31,155 @@ class RankingsViewModel @Inject constructor() : ViewModel() {
     }
 
     fun onCategorySelected(category: RankingCategory) {
-        _uiState.value = _uiState.value.copy(selectedCategory = category)
+        _uiState.update { it.copy(selectedCategory = category) }
     }
 
     private fun loadRankings() {
         viewModelScope.launch {
-            // Simula una breve carga para mostrar la animación de progreso
-            delay(350)
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 
-            val artists = listOf(
-                RankingItem(
-                    id = "artist_beyonce",
-                    name = "Beyoncé",
-                    subtitle = "R&B • Soul",
-                    score = 4.9,
-                    imageUrl = "https://images.unsplash.com/photo-1529665253569-6d01c0eaf7b6"
-                ),
-                RankingItem(
-                    id = "artist_kendrick",
-                    name = "Kendrick Lamar",
-                    subtitle = "Hip-Hop",
-                    score = 4.8,
-                    imageUrl = "https://images.unsplash.com/photo-1525182008055-f88b95ff7980"
-                ),
-                RankingItem(
-                    id = "artist_taylor",
-                    name = "Taylor Swift",
-                    subtitle = "Pop",
-                    score = 4.7,
-                    imageUrl = "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee"
-                ),
-                RankingItem(
-                    id = "artist_rosalia",
-                    name = "Rosalía",
-                    subtitle = "Flamenco Pop",
-                    score = 4.6,
-                    imageUrl = "https://images.unsplash.com/photo-1489424731084-a5d8b219a5bb"
-                ),
-                RankingItem(
-                    id = "artist_bad_bunny",
-                    name = "Bad Bunny",
-                    subtitle = "Reggaetón",
-                    score = 4.5,
-                    imageUrl = "https://images.unsplash.com/photo-1499424017184-418f6808abf2"
+            val albumsDeferred = async { albumRepository.getAllAlbums() }
+            val reviewsDeferred = async { reviewRepository.getAllReviews() }
+
+            val albumsResult = albumsDeferred.await()
+            val reviewsResult = reviewsDeferred.await()
+
+            if (albumsResult.isFailure || reviewsResult.isFailure) {
+                val error = albumsResult.exceptionOrNull() ?: reviewsResult.exceptionOrNull()
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = error.toUserMessage()
+                    )
+                }
+                return@launch
+            }
+
+            val albums = albumsResult.getOrThrow()
+            val reviews = reviewsResult.getOrThrow()
+            val (artistRankings, albumRankings) = computeRankings(albums, reviews)
+
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    errorMessage = null,
+                    artistRankings = artistRankings,
+                    albumRankings = albumRankings
                 )
+            }
+        }
+    }
+
+    private fun computeRankings(
+        albums: List<AlbumInfo>,
+        reviews: List<ReviewInfo>
+    ): Pair<List<RankingItem>, List<RankingItem>> {
+        if (albums.isEmpty() || reviews.isEmpty()) {
+            return emptyList<RankingItem>() to emptyList()
+        }
+
+        val albumById = albums.associateBy { it.id }
+
+        val albumAggregates = reviews
+            .filter { it.albumId != 0 }
+            .groupBy { it.albumId }
+            .mapNotNull { (albumId, albumReviews) ->
+                val album = albumById[albumId] ?: return@mapNotNull null
+                val reviewCount = albumReviews.size
+                if (reviewCount == 0) return@mapNotNull null
+
+                val totalScore = albumReviews.sumOf { it.score }
+                val averageScore = totalScore / reviewCount
+
+                AlbumAggregate(
+                    album = album,
+                    averageScore = averageScore,
+                    totalScore = totalScore,
+                    reviewCount = reviewCount
+                )
+            }
+            .sortedWith(
+                compareByDescending<AlbumAggregate> { it.averageScore }
+                    .thenByDescending { it.reviewCount }
+                    .thenBy { it.album.title.lowercase() }
             )
 
-            val albums = listOf(
-                RankingItem(
-                    id = "album_blonde",
-                    name = "Blonde",
-                    subtitle = "Frank Ocean",
-                    score = 4.9,
-                    imageUrl = "https://images.unsplash.com/photo-1526498460520-4c246339dccb"
-                ),
-                RankingItem(
-                    id = "album_to_pimp",
-                    name = "To Pimp a Butterfly",
-                    subtitle = "Kendrick Lamar",
-                    score = 4.8,
-                    imageUrl = "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f"
-                ),
-                RankingItem(
-                    id = "album_motomami",
-                    name = "MOTOMAMI",
-                    subtitle = "Rosalía",
-                    score = 4.7,
-                    imageUrl = "https://images.unsplash.com/photo-1470225620780-dba8ba36b745"
-                ),
-                RankingItem(
-                    id = "album_midnights",
-                    name = "Midnights",
-                    subtitle = "Taylor Swift",
-                    score = 4.6,
-                    imageUrl = "https://images.unsplash.com/photo-1498050108023-c5249f4df085"
-                ),
-                RankingItem(
-                    id = "album_un_verano",
-                    name = "Un Verano Sin Ti",
-                    subtitle = "Bad Bunny",
-                    score = 4.5,
-                    imageUrl = "https://images.unsplash.com/photo-1498050108023-c5249f4df085"
-                )
-            )
-
-            _uiState.value = RankingsState(
-                isLoading = false,
-                artistRankings = artists,
-                albumRankings = albums
+        val albumRankings = albumAggregates.map { aggregate ->
+            RankingItem(
+                id = aggregate.album.id.toString(),
+                name = aggregate.album.title,
+                subtitle = listOfNotNull(
+                    aggregate.album.artist.name.takeIf { it.isNotBlank() },
+                    formatReviewLabel(aggregate.reviewCount)
+                ).joinToString(" • "),
+                score = aggregate.averageScore,
+                imageUrl = aggregate.album.coverUrl.ifBlank { DEFAULT_ALBUM_IMAGE }
             )
         }
+
+        val artistAggregates = albumAggregates
+            .groupBy { it.album.artist.id }
+            .map { (_, aggregates) ->
+                val artist = aggregates.first().album.artist
+                val reviewCount = aggregates.sumOf { it.reviewCount }
+                val totalScore = aggregates.sumOf { it.totalScore }
+                val averageScore = if (reviewCount == 0) 0.0 else totalScore / reviewCount
+
+                ArtistAggregate(
+                    artist = artist,
+                    reviewCount = reviewCount,
+                    averageScore = averageScore
+                )
+            }
+            .sortedWith(
+                compareByDescending<ArtistAggregate> { it.averageScore }
+                    .thenByDescending { it.reviewCount }
+                    .thenBy { it.artist.name.lowercase() }
+            )
+
+        val artistRankings = artistAggregates.map { aggregate ->
+            val subtitleParts = buildList {
+                if (aggregate.artist.genre.isNotBlank()) add(aggregate.artist.genre)
+                add(formatReviewLabel(aggregate.reviewCount))
+            }
+
+            RankingItem(
+                id = aggregate.artist.id.toString(),
+                name = aggregate.artist.name,
+                subtitle = subtitleParts.joinToString(" • "),
+                score = aggregate.averageScore,
+                imageUrl = aggregate.artist.profileImageUrl.ifBlank { DEFAULT_ARTIST_IMAGE }
+            )
+        }
+
+        return artistRankings to albumRankings
+    }
+
+    private fun Throwable?.toUserMessage(): String {
+        val error = this ?: return GENERIC_ERROR_MESSAGE
+        if (error is CancellationException) throw error
+        return error.localizedMessage?.takeIf { it.isNotBlank() } ?: GENERIC_ERROR_MESSAGE
+    }
+
+    private fun formatReviewLabel(count: Int): String =
+        if (count == 1) "1 reseña" else "$count reseñas"
+
+    private data class AlbumAggregate(
+        val album: AlbumInfo,
+        val averageScore: Double,
+        val totalScore: Double,
+        val reviewCount: Int
+    )
+
+    private data class ArtistAggregate(
+        val artist: ArtistInfo,
+        val reviewCount: Int,
+        val averageScore: Double
+    )
+
+    companion object {
+        private const val DEFAULT_ALBUM_IMAGE = "https://placehold.co/600x400?text=No+Cover"
+        private const val DEFAULT_ARTIST_IMAGE = "https://placehold.co/300x300?text=No+Image"
+        private const val GENERIC_ERROR_MESSAGE = "No pudimos obtener los rankings. Intenta nuevamente."
     }
 }
