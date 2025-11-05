@@ -41,4 +41,6 @@ sealed class Screen(val route: String) {
     object Following : Screen("following/{uid}") {
         fun createRoute(uid: String) = "following/$uid"
     }
+
+    object Rankings : Screen("rankings")
 }
