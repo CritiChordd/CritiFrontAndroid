@@ -30,6 +30,8 @@ import com.example.proyecto_movil.ui.Screens.Register.RegisterScreen
 import com.example.proyecto_movil.ui.Screens.Register.RegisterViewModel
 import com.example.proyecto_movil.uiViews.homePage.HomeScreen
 import com.example.proyecto_movil.ui.Screens.Home.HomeViewModel
+import com.example.proyecto_movil.ui.Screens.Chat.ChatScreen
+import com.example.proyecto_movil.ui.Screens.Chat.ChatViewModel
 import com.example.proyecto_movil.ui.Screens.UserProfile.UserProfileScreen
 import com.example.proyecto_movil.ui.Screens.UserProfile.UserProfileViewModel
 import com.example.proyecto_movil.ui.Screens.Settings.SettingsScreen
@@ -135,6 +137,22 @@ fun AppNavHost(
                 onReviewProfileImageClicked = { uid -> navController.navigate(Screen.Profile.createRoute(uid)) },
                 onNotificationsClick = { navController.navigate(Screen.Notifications.route) },
                 onFollowingFeedClick = { navController.navigate(Screen.FollowingFeed.route) } // ← NUEVO
+            )
+        }
+
+        /* ------------------ CHAT ------------------ */
+        composable(Screen.Chat.route) {
+            val vm: ChatViewModel = hiltViewModel()
+            val state = vm.uiState.collectAsState().value
+
+            ChatScreen(
+                state = state,
+                onConversationSelected = { preview -> vm.onConversationSelected(preview.conversationId) },
+                onUserSelected = vm::onUserSelected,
+                onMessageTextChange = vm::onMessageTextChanged,
+                onSendMessage = vm::sendCurrentMessage,
+                onBackFromConversation = vm::onBackFromConversation,
+                onClearError = vm::clearError
             )
         }
 

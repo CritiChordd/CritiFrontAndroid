@@ -73,6 +73,7 @@ fun TwitterBottomNavigationBar(
             BottomNavItem(Icons.Filled.Home, Icons.Outlined.Home, Screen.Home.route),
             BottomNavItem(Icons.Filled.Leaderboard, Icons.Outlined.Leaderboard, Screen.Rankings.route),
             BottomNavItem(Icons.Filled.AddCircle, Icons.Outlined.AddCircle, Screen.AddReview.route),
+            BottomNavItem(Icons.Filled.Chat, Icons.Outlined.Chat, Screen.Chat.route),
             BottomNavItem(
                 Icons.Filled.Person,
                 Icons.Outlined.Person,
