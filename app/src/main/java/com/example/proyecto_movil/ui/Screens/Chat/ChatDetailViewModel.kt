@@ -61,17 +61,16 @@ class ChatDetailViewModel @Inject constructor(
                     errorMessage = "No se pudo cargar la conversación."
                 )
             }
-            return
+        } else {
+            _uiState.update { it.copy(isLoading = true) }
+
+            if (partnerId.isNotBlank()) {
+                loadPartner(partnerId)
+                ensureConversation(partnerId)
+            }
+
+            watchMessages(conversationId)
         }
-
-        _uiState.update { it.copy(isLoading = true) }
-
-        if (partnerId.isNotBlank()) {
-            loadPartner(partnerId)
-            ensureConversation(partnerId)
-        }
-
-        watchMessages(conversationId)
     }
 
     private fun ensureConversation(partnerId: String) {
