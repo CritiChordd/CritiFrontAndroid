@@ -7,15 +7,14 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
@@ -27,10 +26,15 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -40,118 +44,220 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.composed
 import coil.compose.AsyncImage
 import com.example.proyecto_movil.data.UserInfo
 
 @Composable
-fun ChatScreen(
+fun ChatListScreen(
     state: ChatUiState,
     onConversationSelected: (ConversationPreview) -> Unit,
     onUserSelected: (UserInfo) -> Unit,
-    onMessageTextChange: (String) -> Unit,
-    onSendMessage: () -> Unit,
-    onBackFromConversation: () -> Unit,
     onClearError: () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-        state.errorMessage?.let { message ->
-            ErrorMessage(message = message, onDismiss = onClearError)
-            Spacer(modifier = Modifier.height(12.dp))
+        item {
+            state.errorMessage?.let { message ->
+                ErrorMessage(message = message, onDismiss = onClearError)
+            }
         }
 
-        Text(
-            text = "Conversaciones",
-            style = MaterialTheme.typography.titleMedium
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        ConversationList(
-            conversations = state.conversations,
-            onConversationSelected = onConversationSelected,
-            selectedConversationId = state.selectedConversationId
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        if (state.following.isNotEmpty()) {
-            Text(
-                text = "Personas que sigues",
-                style = MaterialTheme.typography.titleMedium
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            FollowingRow(users = state.following, onUserSelected = onUserSelected)
-            Spacer(modifier = Modifier.height(16.dp))
-        }
-
-        Divider()
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Box(modifier = Modifier.weight(1f)) {
-            if (state.selectedUser != null) {
-                ConversationDetail(
-                    user = state.selectedUser,
-                    messages = state.messages,
-                    messageText = state.messageText,
-                    onMessageTextChange = onMessageTextChange,
-                    onSendMessage = onSendMessage,
-                    onBack = onBackFromConversation
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = "Personas que sigues",
+                    style = MaterialTheme.typography.titleMedium
                 )
-            } else {
-                EmptyConversationPlaceholder()
+                if (state.following.isNotEmpty()) {
+                    FollowingRow(users = state.following, onUserSelected = onUserSelected)
+                } else {
+                    Text(
+                        text = "Aún no sigues a nadie.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = "Conversaciones",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Divider()
+            }
+        }
+
+        if (state.isLoading && state.conversations.isEmpty()) {
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 24.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+        }
+
+        if (state.conversations.isEmpty() && !state.isLoading) {
+            item {
+                Text(
+                    text = "Todavía no tienes conversaciones. ¡Empieza un chat con tus seguidos!",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        } else if (state.conversations.isNotEmpty()) {
+            items(state.conversations, key = { it.conversationId }) { preview ->
+                ConversationItem(
+                    preview = preview,
+                    onClick = { onConversationSelected(preview) }
+                )
             }
         }
     }
 }
 
 @Composable
-private fun ConversationList(
-    conversations: List<ConversationPreview>,
-    onConversationSelected: (ConversationPreview) -> Unit,
-    selectedConversationId: String?
+fun ChatDetailScreen(
+    state: ChatDetailUiState,
+    onMessageTextChange: (String) -> Unit,
+    onSendMessage: () -> Unit,
+    onBack: () -> Unit,
+    onDeleteChat: () -> Unit,
+    onClearError: () -> Unit
 ) {
-    if (conversations.isEmpty()) {
-        Text(
-            text = "Todavía no tienes conversaciones. ¡Empieza un chat con tus seguidos!",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+    var menuExpanded by remember { mutableStateOf(false) }
+    var confirmDelete by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(imageVector = Icons.Filled.ArrowBack, contentDescription = "Volver")
+            }
+            AsyncImage(
+                model = state.partner?.profileImageUrl,
+                contentDescription = "Avatar",
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                val title = state.partner?.username
+                    ?.ifBlank { state.partner?.name }
+                    ?: state.partnerId.ifBlank { "Chat" }
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                val subtitle = state.partner?.name
+                    ?.takeIf { it.isNotBlank() && it != state.partner?.username }
+                subtitle?.let { fullName ->
+                    Text(
+                        text = fullName,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+            Box {
+                IconButton(onClick = { menuExpanded = true }) {
+                    Icon(imageVector = Icons.Filled.MoreVert, contentDescription = "Opciones")
+                }
+                DropdownMenu(
+                    expanded = menuExpanded,
+                    onDismissRequest = { menuExpanded = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text(text = "Eliminar chat") },
+                        onClick = {
+                            menuExpanded = false
+                            confirmDelete = true
+                        }
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        state.errorMessage?.let { message ->
+            ErrorMessage(message = message, onDismiss = onClearError)
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+
+        val listState = rememberLazyListState()
+        Box(modifier = Modifier.weight(1f)) {
+            MessagesList(messages = state.messages, listState = listState)
+            if (state.isLoading && state.messages.isEmpty()) {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        MessageInput(
+            messageText = state.messageText,
+            onMessageTextChange = onMessageTextChange,
+            onSendMessage = onSendMessage
         )
-        return
     }
 
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(max = 220.dp)
-    ) {
-        items(conversations, key = { it.conversationId }) { preview ->
-            ConversationItem(
-                preview = preview,
-                isSelected = preview.conversationId == selectedConversationId,
-                onClick = { onConversationSelected(preview) }
-            )
-        }
+    if (confirmDelete) {
+        AlertDialog(
+            onDismissRequest = { confirmDelete = false },
+            title = { Text(text = "Eliminar chat") },
+            text = { Text(text = "¿Seguro que deseas eliminar esta conversación?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmDelete = false
+                    onDeleteChat()
+                }) {
+                    Text(text = "Eliminar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmDelete = false }) {
+                    Text(text = "Cancelar")
+                }
+            }
+        )
     }
 }
 
 @Composable
 private fun ConversationItem(
     preview: ConversationPreview,
-    isSelected: Boolean,
     onClick: () -> Unit
 ) {
     val partner = preview.partner
@@ -172,31 +278,23 @@ private fun ConversationItem(
         ).toString()
     }
 
-    val background = if (isSelected) {
-        MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-    } else {
-        Color.Transparent
-    }
-
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .background(background)
             .clickableWithoutRipple(onClick)
-            .padding(horizontal = 12.dp, vertical = 10.dp)
-            .heightIn(min = 56.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f))
+            .padding(horizontal = 12.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         AsyncImage(
             model = partner?.profileImageUrl,
             contentDescription = "Avatar",
             modifier = Modifier
-                .size(48.dp)
+                .size(52.dp)
                 .clip(CircleShape)
         )
-
-        Spacer(modifier = Modifier.width(12.dp))
 
         Column(modifier = Modifier.weight(1f)) {
             Text(text = title, style = MaterialTheme.typography.bodyLarge)
@@ -210,7 +308,6 @@ private fun ConversationItem(
         }
 
         if (relativeTime.isNotEmpty()) {
-            Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = relativeTime,
                 style = MaterialTheme.typography.bodySmall,
@@ -232,7 +329,7 @@ private fun FollowingRow(
                     model = user.profileImageUrl,
                     contentDescription = "Avatar de ${user.username}",
                     modifier = Modifier
-                        .size(56.dp)
+                        .size(64.dp)
                         .clip(CircleShape)
                         .clickableWithoutRipple { onUserSelected(user) }
                 )
@@ -245,42 +342,6 @@ private fun FollowingRow(
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun ConversationDetail(
-    user: UserInfo,
-    messages: List<ChatMessageUi>,
-    messageText: String,
-    onMessageTextChange: (String) -> Unit,
-    onSendMessage: () -> Unit,
-    onBack: () -> Unit
-) {
-    Column(modifier = Modifier.fillMaxSize()) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(imageVector = Icons.Filled.ArrowBack, contentDescription = "Volver")
-            }
-            Text(
-                text = user.username.ifBlank { user.name.ifBlank { "Chat" } },
-                style = MaterialTheme.typography.titleMedium
-            )
-        }
-
-        val listState = rememberLazyListState()
-        Box(modifier = Modifier.weight(1f)) {
-            MessagesList(messages = messages, listState = listState)
-        }
-
-        MessageInput(
-            messageText = messageText,
-            onMessageTextChange = onMessageTextChange,
-            onSendMessage = onSendMessage
-        )
     }
 }
 
@@ -333,10 +394,9 @@ private fun MessageInput(
     onSendMessage: () -> Unit
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         OutlinedTextField(
             value = messageText,
@@ -347,28 +407,9 @@ private fun MessageInput(
             keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Send),
             keyboardActions = KeyboardActions(onSend = { onSendMessage() })
         )
-        Spacer(modifier = Modifier.width(8.dp))
         IconButton(onClick = onSendMessage, enabled = messageText.isNotBlank()) {
             Icon(imageVector = Icons.Filled.Send, contentDescription = "Enviar")
         }
-    }
-}
-
-@Composable
-private fun EmptyConversationPlaceholder() {
-    Column(
-        modifier = Modifier
-            .fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = "Selecciona una conversación o inicia un chat nuevo desde tus seguidos.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 16.dp),
-            textAlign = TextAlign.Center
-        )
     }
 }
 

@@ -2,7 +2,6 @@ package com.example.proyecto_movil.ui.Screens.Chat
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.proyecto_movil.data.ChatMessage
 import com.example.proyecto_movil.data.ConversationSummary
 import com.example.proyecto_movil.data.UserInfo
 import com.example.proyecto_movil.data.repository.AuthRepository
@@ -31,7 +30,6 @@ class ChatViewModel @Inject constructor(
 
     private var conversationsJob: Job? = null
     private var followingJob: Job? = null
-    private var messagesJob: Job? = null
 
     init {
         initialize()
@@ -76,16 +74,9 @@ class ChatViewModel @Inject constructor(
             chatRepository.listenConversations(uid).collectLatest { conversations ->
                 val previews = buildConversationPreviews(uid, conversations)
                 _uiState.update { state ->
-                    val selectedConversationId = state.selectedConversationId
-                    val selectedUser = selectedConversationId?.let { selectedId ->
-                        previews.firstOrNull { it.conversationId == selectedId }?.partner
-                            ?: state.selectedUser
-                    } ?: state.selectedUser
-
                     state.copy(
                         conversations = previews,
-                        isLoading = false,
-                        selectedUser = selectedUser
+                        isLoading = false
                     )
                 }
             }
@@ -131,36 +122,17 @@ class ChatViewModel @Inject constructor(
     fun onConversationSelected(conversationId: String) {
         val state = _uiState.value
         val preview = state.conversations.firstOrNull { it.conversationId == conversationId } ?: return
-        val user = preview.partner
-        if (state.currentUserId.isBlank() || preview.partnerId.isBlank()) return
+        if (preview.partnerId.isBlank()) return
 
         _uiState.update {
             it.copy(
-                selectedConversationId = preview.conversationId,
-                selectedUser = user,
-                messages = emptyList()
+                pendingConversation = PendingConversation(
+                    conversationId = preview.conversationId,
+                    partnerId = preview.partnerId,
+                    partner = preview.partner
+                )
             )
         }
-
-        if (user == null) {
-            viewModelScope.launch {
-                val fetched = ensureUser(preview.partnerId)
-                if (fetched != null) {
-                    _uiState.update { current ->
-                        if (current.selectedConversationId == preview.conversationId) {
-                            current.copy(selectedUser = fetched)
-                        } else {
-                            current
-                        }
-                    }
-                }
-            }
-        }
-
-        viewModelScope.launch {
-            chatRepository.ensureConversation(state.currentUserId, preview.partnerId)
-        }
-        watchMessages(preview.conversationId)
     }
 
     fun onUserSelected(user: UserInfo) {
@@ -177,81 +149,32 @@ class ChatViewModel @Inject constructor(
         val conversationId = chatRepository.conversationIdFor(currentUserId, user.id)
         _uiState.update {
             it.copy(
-                selectedConversationId = conversationId,
-                selectedUser = user,
-                messages = emptyList()
+                pendingConversation = PendingConversation(
+                    conversationId = conversationId,
+                    partnerId = user.id,
+                    partner = user
+                )
             )
         }
 
         viewModelScope.launch {
-            chatRepository.ensureConversation(currentUserId, user.id)
-        }
-        watchMessages(conversationId)
-    }
-
-    private fun watchMessages(conversationId: String) {
-        messagesJob?.cancel()
-        messagesJob = viewModelScope.launch {
-            chatRepository.listenMessages(conversationId).collectLatest { messages ->
-                val currentUser = _uiState.value.currentUserId
-                val uiMessages = messages.map { it.toUi(currentUser) }
-                _uiState.update { it.copy(messages = uiMessages) }
-            }
-        }
-    }
-
-    fun onMessageTextChanged(newText: String) {
-        _uiState.update { it.copy(messageText = newText) }
-    }
-
-    fun sendCurrentMessage() {
-        val state = _uiState.value
-        val text = state.messageText.trim()
-        val toUser = state.selectedUser ?: return
-        val fromId = state.currentUserId
-        if (text.isEmpty() || fromId.isBlank() || toUser.id.isBlank()) return
-
-        val conversationId = state.selectedConversationId
-            ?: chatRepository.conversationIdFor(fromId, toUser.id)
-
-        _uiState.update { it.copy(messageText = "") }
-
-        viewModelScope.launch {
             try {
-                chatRepository.ensureConversation(fromId, toUser.id)
-                chatRepository.sendMessage(conversationId, fromId, toUser.id, text)
+                chatRepository.ensureConversation(currentUserId, user.id)
             } catch (e: Throwable) {
                 _uiState.update {
-                    it.copy(
-                        errorMessage = e.message ?: "No se pudo enviar el mensaje",
-                        messageText = text
-                    )
+                    it.copy(errorMessage = e.message ?: "No se pudo iniciar la conversación")
                 }
             }
         }
     }
 
-    fun onBackFromConversation() {
-        messagesJob?.cancel()
-        _uiState.update {
-            it.copy(
-                selectedConversationId = null,
-                selectedUser = null,
-                messages = emptyList()
-            )
-        }
+    fun consumePendingNavigation() {
+        _uiState.update { it.copy(pendingConversation = null) }
     }
 
     fun clearError() {
         _uiState.update { it.copy(errorMessage = null) }
     }
-
-    private fun ChatMessage.toUi(currentUserId: String): ChatMessageUi = ChatMessageUi(
-        id = id,
-        text = text,
-        isMine = senderId == currentUserId,
-        timestamp = timestamp
-    )
 }
 
 data class ChatUiState(
@@ -259,11 +182,8 @@ data class ChatUiState(
     val isLoading: Boolean = false,
     val following: List<UserInfo> = emptyList(),
     val conversations: List<ConversationPreview> = emptyList(),
-    val selectedConversationId: String? = null,
-    val selectedUser: UserInfo? = null,
-    val messages: List<ChatMessageUi> = emptyList(),
-    val messageText: String = "",
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val pendingConversation: PendingConversation? = null
 )
 
 data class ConversationPreview(
@@ -274,9 +194,8 @@ data class ConversationPreview(
     val lastTimestamp: Long
 )
 
-data class ChatMessageUi(
-    val id: String,
-    val text: String,
-    val isMine: Boolean,
-    val timestamp: Long
+data class PendingConversation(
+    val conversationId: String,
+    val partnerId: String,
+    val partner: UserInfo?
 )

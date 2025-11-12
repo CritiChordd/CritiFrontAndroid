@@ -8,6 +8,21 @@ sealed class Screen(val route: String) {
     object Register : Screen("register")
     object Home : Screen("home")
     object Chat : Screen("chat")
+    object ChatDetail : Screen("chat/detail/{conversationId}?partnerId={partnerId}&username={username}&displayName={displayName}&imageUrl={imageUrl}") {
+        fun createRoute(
+            conversationId: String,
+            partnerId: String,
+            username: String?,
+            displayName: String?,
+            imageUrl: String?
+        ): String {
+            val encodedPartnerId = Uri.encode(partnerId)
+            val encodedUsername = Uri.encode(username.orEmpty())
+            val encodedDisplayName = Uri.encode(displayName.orEmpty())
+            val encodedImage = Uri.encode(imageUrl.orEmpty())
+            return "chat/detail/$conversationId?partnerId=$encodedPartnerId&username=$encodedUsername&displayName=$encodedDisplayName&imageUrl=$encodedImage"
+        }
+    }
 
     // Perfil por UID (String)
     object Profile : Screen("profile/{uid}") {

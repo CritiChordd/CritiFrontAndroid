@@ -136,6 +136,17 @@ class ChatFirestoreDataSourceImpl(
         conversationRef.set(updateData, SetOptions.merge()).await()
     }
 
+    override suspend fun deleteConversation(conversationId: String) {
+        if (conversationId.isBlank()) return
+
+        val conversationRef = db.collection(CONVERSATIONS_COLLECTION).document(conversationId)
+        val messagesSnapshot = conversationRef.collection(MESSAGES_COLLECTION).get().await()
+        for (document in messagesSnapshot.documents) {
+            document.reference.delete().await()
+        }
+        conversationRef.delete().await()
+    }
+
     private fun conversationIdFor(userA: String, userB: String): String {
         if (userA.isBlank() || userB.isBlank()) return ""
         return listOf(userA, userB).sorted().joinToString(separator = "_")

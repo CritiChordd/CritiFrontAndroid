@@ -27,4 +27,7 @@ class ChatRepository @Inject constructor(
 
     fun conversationIdFor(userA: String, userB: String): String =
         listOf(userA, userB).sorted().joinToString(separator = "_")
+
+    suspend fun deleteConversation(conversationId: String) =
+        remoteDataSource.deleteConversation(conversationId)
 }

@@ -14,4 +14,5 @@ interface ChatRemoteDataSource {
         toId: String,
         text: String
     )
+    suspend fun deleteConversation(conversationId: String)
 }
