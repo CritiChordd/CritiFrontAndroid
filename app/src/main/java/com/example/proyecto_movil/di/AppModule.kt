@@ -2,8 +2,10 @@ package com.example.proyecto_movil.di
 
 import com.example.proyecto_movil.data.datasource.AlbumRemoteDataSource
 import com.example.proyecto_movil.data.datasource.ArtistRemoteDataSource
+import com.example.proyecto_movil.data.datasource.ChatRemoteDataSource
 import com.example.proyecto_movil.data.datasource.ReviewRemoteDataSource
 import com.example.proyecto_movil.data.datasource.impl.firestore.AlbumFirestoreDataSourceImpl
+import com.example.proyecto_movil.data.datasource.impl.firestore.ChatFirestoreDataSourceImpl
 import com.example.proyecto_movil.data.datasource.impl.firestore.ReviewFirestoreDataSourceImpl
 import com.example.proyecto_movil.data.datasource.impl.firestore.UserFirestoreDataSourceImpl
 import com.example.proyecto_movil.data.datasource.impl.firestore.NotificationsFirestoreDataSourceImpl
@@ -112,6 +114,18 @@ object AppModule {
 
     @Singleton
     @Provides
+    fun provideChatFirestoreDataSource(
+        firestore: FirebaseFirestore
+    ) = ChatFirestoreDataSourceImpl(firestore)
+
+    @Singleton
+    @Provides
+    fun provideChatRemoteDataSource(
+        firestoreDS: ChatFirestoreDataSourceImpl
+    ): ChatRemoteDataSource = firestoreDS
+
+    @Singleton
+    @Provides
     fun provideAlbumFirestoreDataSource(
         firestore: FirebaseFirestore
     ): AlbumFirestoreDataSourceImpl = AlbumFirestoreDataSourceImpl(firestore)
@@ -146,4 +160,8 @@ object AppModule {
 
     @Singleton @Provides
     fun provideNotificationsRepository(ds: NotificationsRemoteDataSource) = NotificationsRepository(ds)
+
+    @Singleton
+    @Provides
+    fun provideChatRepository(ds: ChatRemoteDataSource) = ChatRepository(ds)
 }

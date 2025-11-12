@@ -30,6 +30,10 @@ import com.example.proyecto_movil.ui.Screens.Register.RegisterScreen
 import com.example.proyecto_movil.ui.Screens.Register.RegisterViewModel
 import com.example.proyecto_movil.uiViews.homePage.HomeScreen
 import com.example.proyecto_movil.ui.Screens.Home.HomeViewModel
+import com.example.proyecto_movil.ui.Screens.Chat.ChatDetailScreen
+import com.example.proyecto_movil.ui.Screens.Chat.ChatDetailViewModel
+import com.example.proyecto_movil.ui.Screens.Chat.ChatListScreen
+import com.example.proyecto_movil.ui.Screens.Chat.ChatViewModel
 import com.example.proyecto_movil.ui.Screens.UserProfile.UserProfileScreen
 import com.example.proyecto_movil.ui.Screens.UserProfile.UserProfileViewModel
 import com.example.proyecto_movil.ui.Screens.Settings.SettingsScreen
@@ -135,6 +139,62 @@ fun AppNavHost(
                 onReviewProfileImageClicked = { uid -> navController.navigate(Screen.Profile.createRoute(uid)) },
                 onNotificationsClick = { navController.navigate(Screen.Notifications.route) },
                 onFollowingFeedClick = { navController.navigate(Screen.FollowingFeed.route) } // ← NUEVO
+            )
+        }
+
+        /* ------------------ CHAT ------------------ */
+        composable(Screen.Chat.route) {
+            val vm: ChatViewModel = hiltViewModel()
+            val state = vm.uiState.collectAsState().value
+
+            LaunchedEffect(state.pendingConversation) {
+                val pending = state.pendingConversation ?: return@LaunchedEffect
+                val route = Screen.ChatDetail.createRoute(
+                    conversationId = pending.conversationId,
+                    partnerId = pending.partnerId,
+                    username = pending.partner?.username,
+                    displayName = pending.partner?.name,
+                    imageUrl = pending.partner?.profileImageUrl
+                )
+                vm.consumePendingNavigation()
+                navController.navigate(route)
+            }
+
+            ChatListScreen(
+                state = state,
+                onConversationSelected = { preview -> vm.onConversationSelected(preview.conversationId) },
+                onUserSelected = vm::onUserSelected,
+                onClearError = vm::clearError
+            )
+        }
+
+        composable(
+            route = Screen.ChatDetail.route,
+            arguments = listOf(
+                navArgument("conversationId") { type = NavType.StringType },
+                navArgument("partnerId") { type = NavType.StringType; defaultValue = "" },
+                navArgument("username") { type = NavType.StringType; defaultValue = "" },
+                navArgument("displayName") { type = NavType.StringType; defaultValue = "" },
+                navArgument("imageUrl") { type = NavType.StringType; defaultValue = "" }
+            )
+        ) {
+            val vm: ChatDetailViewModel = hiltViewModel()
+            val state = vm.uiState.collectAsState().value
+
+            LaunchedEffect(state.conversationDeleted) {
+                if (state.conversationDeleted) {
+                    vm.consumeDeletion()
+                    navController.popBackStack()
+                }
+            }
+
+            ChatDetailScreen(
+                state = state,
+                onMessageTextChange = vm::onMessageTextChanged,
+                onSendMessage = vm::sendCurrentMessage,
+                onBack = { navController.navigateUp() },
+                onDeleteChat = vm::deleteConversation,
+                onClearError = vm::clearError
             )
         }
 
