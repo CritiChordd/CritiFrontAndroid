@@ -9,10 +9,25 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -31,16 +46,33 @@ fun LoginScreen(
     onLogin: (email: String, password: String, remember: Boolean) -> Unit = { _, _, _ -> },
     onForgotPassword: () -> Unit = {},
     onRegister: () -> Unit = {},
-    modifier: Modifier = Modifier.testTag("loginScreen") // <- tag por defecto
+    modifier: Modifier = Modifier.testTag("loginScreen")
 ) {
     val state by viewModel.uiState.collectAsState()
 
     // Navegaciones one-shot
-    LaunchedEffect(state.navigateBack, state.navigateAfterLogin, state.navigateToForgot, state.navigateToRegister) {
-        if (state.navigateBack) { onBack(); viewModel.consumeBack() }
-        if (state.navigateAfterLogin) { onLogin(state.email, state.password, state.remember); viewModel.consumeAfterLogin() }
-        if (state.navigateToForgot) { onForgotPassword(); viewModel.consumeForgot() }
-        if (state.navigateToRegister) { onRegister(); viewModel.consumeRegister() }
+    LaunchedEffect(
+        state.navigateBack,
+        state.navigateAfterLogin,
+        state.navigateToForgot,
+        state.navigateToRegister
+    ) {
+        if (state.navigateBack) {
+            onBack()
+            viewModel.consumeBack()
+        }
+        if (state.navigateAfterLogin) {
+            onLogin(state.email, state.password, state.remember)
+            viewModel.consumeAfterLogin()
+        }
+        if (state.navigateToForgot) {
+            onForgotPassword()
+            viewModel.consumeForgot()
+        }
+        if (state.navigateToRegister) {
+            onRegister()
+            viewModel.consumeRegister()
+        }
     }
 
     val isDark = isSystemInDarkTheme()
@@ -56,23 +88,27 @@ fun LoginScreen(
         }
     }
 
-    Scaffold(snackbarHost = { SnackbarHost(hostState = snackbarHostState) }) { padding ->
+    Scaffold(
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+    ) { padding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .then(modifier) // <- aplica el modifier con el testTag aquí
+                .then(modifier)
         ) {
+            // Fondo que cubre toda la pantalla
             Image(
                 painter = painterResource(id = backgroundRes),
                 contentDescription = null,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
             )
 
             IconButton(
                 onClick = { viewModel.onBackClicked() },
                 modifier = Modifier
                     .align(Alignment.TopStart)
+                    .padding(padding)
                     .padding(12.dp)
             ) {
                 Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Atrás")
@@ -82,7 +118,8 @@ fun LoginScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.Center)
-                    .padding(horizontal = 24.dp),
+                    .padding(horizontal = 24.dp)
+                    .padding(padding),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Image(
@@ -145,7 +182,7 @@ fun LoginScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp)
-                        .testTag("boton_login") // <- para el test
+                        .testTag("boton_login")
                 ) {
                     Text("Ingresar", fontWeight = FontWeight.SemiBold)
                 }
@@ -189,8 +226,11 @@ private fun InputField(
         onValueChange = onValueChange,
         label = { Text(label) },
         singleLine = true,
-        visualTransformation = if (isPassword && !showPassword)
-            PasswordVisualTransformation() else VisualTransformation.None,
+        visualTransformation = if (isPassword && !showPassword) {
+            PasswordVisualTransformation()
+        } else {
+            VisualTransformation.None
+        },
         trailingIcon = {
             if (isPassword) {
                 IconButton(onClick = onTogglePassword) {
@@ -202,6 +242,6 @@ private fun InputField(
             }
         },
         colors = OutlinedTextFieldDefaults.colors(),
-        modifier = modifier.fillMaxWidth() // <- usa el modifier pasado (con el tag)
+        modifier = modifier.fillMaxWidth()
     )
 }
